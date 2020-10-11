@@ -1,7 +1,7 @@
-import { getConnection, Repository } from "typeorm";
-import validator from "validator";
+import { getConnection, Raw, Repository } from "typeorm";
 import { Transaction } from "../../database/entities/transaction.entity";
 import { FindAllDTO, StoreTransactionDTO, UpdateTransctionDTO } from "./transaction.dto";
+import { DateGenerator } from "../../helpers/date-generator.helper";
 
 export class TransactionService {
     private transactionRepository: Repository<Transaction>;
@@ -81,7 +81,12 @@ export class TransactionService {
         const transaction = await this.transactionRepository.findOne(id);
         
         if (transaction) {
-            this.transactionRepository.remove(transaction);
+            await this.transactionRepository
+                .createQueryBuilder()
+                .update()
+                .set({deletedAt: new DateGenerator().generateTimestamp()})
+                .where("id = :id", {id: id})
+                .execute();
             return true;
         }
     }

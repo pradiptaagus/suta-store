@@ -1,6 +1,7 @@
 import { getConnection, Repository } from "typeorm";
 import { Product } from "../../database/entities/product.entity";
-import { ProductDTO, FindAllDTO } from "./product.dto";
+import { StoreProductDTO, UpdateProductDTO, FindAllDTO } from "./product.dto";
+import { DateGenerator } from "../../helpers/date-generator.helper";
 
 export class ProductService {
     private productRepository: Repository<Product>;
@@ -9,18 +10,16 @@ export class ProductService {
         this.productRepository = getConnection().getRepository<Product>(Product);
     }
 
-    async findAll({code, name, isActive, size, page}: FindAllDTO): Promise<Product[]> {
+    async findAll({code, name, size, page}: FindAllDTO): Promise<Product[]> {
         const take = size ? size : 10;
         const skip = page ? page : 1;
-        const status = isActive ? isActive : 1;
 
         if (code && name) {
             return await this.productRepository.find({
                 relations: ["productVariants"],
                 where: {
                     code: code,
-                    name: name,
-                    isActive: status
+                    name: name
                 },
                 take: take,
                 skip: take * (skip - 1)
@@ -29,8 +28,7 @@ export class ProductService {
             return await this.productRepository.find({
                 relations: ["productVariants"],
                 where: {
-                    code: code,
-                    isActive: status
+                    code: code
                 },
                 take: take,
                 skip: take * (skip - 1)
@@ -39,8 +37,7 @@ export class ProductService {
             return await this.productRepository.find({
                 relations: ["productVariants"],
                 where: {
-                    name: name,
-                    isActive: status
+                    name: name
                 },
                 take: take,
                 skip: take * (skip - 1)
@@ -48,9 +45,6 @@ export class ProductService {
         } else {
             return await this.productRepository.find({
                 relations: ["productVariants"],
-                where: {
-                    isActive: status
-                },
                 take: take,
                 skip: take * (skip - 1)
             });
@@ -59,29 +53,24 @@ export class ProductService {
 
     async findOne(id: string): Promise<Product|undefined> {
         return await this.productRepository.findOne(id, {
-            where: {
-                isActive: 1
-            },
             relations: ["productVariants"]
         });
     }
 
-    async store(body: ProductDTO): Promise<Product> {
+    async store(body: StoreProductDTO): Promise<Product> {
         const product = new Product();
         product.code = body.code;
         product.name = body.name;
-        product.isActive = body.isActive;
         const result = await this.productRepository.save(product);
         return result;
     }
 
-    async update(body: ProductDTO, id: string): Promise<Product | undefined> {
+    async update(body: UpdateProductDTO, id: string): Promise<Product | undefined> {
         const product = await this.productRepository.findOne(id);
         
         if (product) {
             product.code = body.code;
             product.name = body.name;
-            product.isActive = body.isActive;
             const result = await this.productRepository.save(product);
             return result;
         }
@@ -91,7 +80,7 @@ export class ProductService {
         const product = await this.productRepository.findOne(id);
         
         if (product) {
-            product.isActive = 0;
+            product.deletedAt = new DateGenerator().generateTimestamp();
             await this.productRepository.save(product);
             return true;
         }

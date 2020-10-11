@@ -7,8 +7,9 @@ import { ProductSnapshotDTO } from "../product-snapshot/product-snapshot.dto";
 import { ProductSnapshotService } from "../product-snapshot/product-snapshot.service";
 import validator from "validator";
 import { ProductDetailService } from "../product-detail/product-detail.service";
-import { StoreTransactionDTO, UpdateTransctionDTO } from "./transaction.dto";
+import { FindAllDTO, StoreTransactionDTO, UpdateTransctionDTO } from "./transaction.dto";
 import { DateValidator } from "../../helpers/date-validator.helper";
+import { ResponseBuilder } from "../../helpers/response-builder.helper";
 
 export class TransactionController {
     private path: string = "/transaction";
@@ -43,22 +44,20 @@ export class TransactionController {
         const dateValidator = new DateValidator();
 
         if (!dateValidator.validate(startDate) || !dateValidator.validate(endDate)) {
-            return res.status(400).json({
-                success: false,
-                message: "Start date and end date value should be date!",
-            });
+            return new ResponseBuilder().customResponse(res, false, `Start date and end date value should be date!`);
         }
 
-        const products = await new TransactionService().findAll({
+        const query: FindAllDTO = {
             size: size, 
             page: page,
             startDate: startDate,
             endDate: endDate
-        });
+        }
+
+        const products = await new TransactionService().findAll(query);
         const totalRecord = await new TransactionService().totalRecord();
-        const totalPage = Math.ceil(totalRecord / size)
-        res.json({
-            success: true,
+        const totalPage = Math.ceil(totalRecord / size);
+        const data = {
             data: products,
             pagination: {
                 size: size,
@@ -66,7 +65,8 @@ export class TransactionController {
                 totalPage: Math.ceil(totalPage),
                 totalRecord: totalRecord
             }
-        });
+        }
+        return new ResponseBuilder().findResponse(res, true, `transaction`, data);
     }
 
     /**
@@ -77,8 +77,9 @@ export class TransactionController {
      */
     async findOne(req: Request, res: Response, next: NextFunction) {
         const id = req.params.id;
-        const product = await new TransactionService().findOne(id);
-        res.json(product)
+        const transaction = await new TransactionService().findOne(id);
+        let status = transaction ? true : false;
+        return new ResponseBuilder().findOneResponse(res, status, `transaction`, transaction);
     }
 
     /**
@@ -95,9 +96,12 @@ export class TransactionController {
             transactionDetails: {
                 productVariantId: string,
                 qty: number,
-                discount?: number
+                discount?: number|string
             }[]
         } = req.body;
+
+        // Get transaction detail array
+        const transactionDetails = body.transactionDetails;
 
         // Validate request
         await check("date")
@@ -164,14 +168,30 @@ export class TransactionController {
             errors.array().forEach(err => {
                 errorMessages[err.param] = err.msg;
             });
-            return res.json({
-                success: false,
-                message: "Failed to create transaction!",
-                errors: errorMessages
-            });
+            return new ResponseBuilder().storeResponse(res, false, `transaction`, errorMessages);
         }
         // End validate request
 
+        // Check transaction details body
+        const transactionDetailErrors: any = {};
+        for (let i = 0; i < transactionDetails.length; i++) {
+            const transactionDetail = transactionDetails[i];
+            const productVariant = await new ProductDetailService().findOne(transactionDetail.productVariantId);
+
+            // Check availability of product variant
+            if (!productVariant) {
+                transactionDetailErrors[`transactionDetails[${i}].productVariantId`] = "Product variant not found!";
+            }
+            // Check product variant stock
+            else if (!(productVariant.qty > transactionDetail.qty)) {
+                transactionDetailErrors[`transactionDetails[${i}].qty`] = "Product quantity requested is exceed the limit!";
+            }
+        }
+
+        if (Object.keys(transactionDetailErrors).length > 0) {
+            return new ResponseBuilder().storeResponse(res, false, `transaction`, transactionDetailErrors);
+        }
+        
         /**
          * Determine if request body has date value.
          * If doesn't exist, it will be automatically generated.
@@ -194,31 +214,17 @@ export class TransactionController {
         // Store transaction
         const transaction = await new TransactionService().store(transactionBody);
         if (!transaction) {
-            return res.status(400).json({
-                success: false,
-                message: "Internal server error"
-            });
+            return new ResponseBuilder().internalServerError(res);
         }
 
         // Loop for create new product snapshot and transaction detail
-        const transactionDetails = body.transactionDetails;            
         for (let i = 0; i < transactionDetails.length; i++) {
             // Get transaction detail item [i] from transactionDetails array
             const transactionDetail = transactionDetails[i];
-
-            /**
-             * Get product variant object from database.
-             * Product variant id will be used on product snapshot modification.
-             * If product variant doesn't exist, it's mean there's no desired product variant
-             * and product snapshot modifcation coludn't be done.
-             */
+            
+            // Get product variant from database
             const productVariant = await new ProductDetailService().findOne(transactionDetail.productVariantId);
-            if (!productVariant) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Internal server error"
-                });
-            }
+            if (!productVariant) continue;
 
             /**
              * Determine discount value.
@@ -227,10 +233,10 @@ export class TransactionController {
              */
             let discount = 0;
             if (
-                transactionDetail.discount ||
+                transactionDetail.discount &&
                 transactionDetail.discount !== undefined
             ) {
-                discount = transactionDetail.discount;
+                discount = +transactionDetail.discount;
             }
 
             /**
@@ -248,7 +254,7 @@ export class TransactionController {
                 code: productVariant.product.code,
                 name: productVariant.product.name,
                 unit: productVariant.unit,
-                qty: transactionDetail.qty,
+                qty: +transactionDetail.qty,
                 price: productVariant.price,
                 discount: discount,
                 totalPrice: totalPrice
@@ -257,10 +263,14 @@ export class TransactionController {
             // Store product snapshot
             const productSnapshot = await new ProductSnapshotService().store(productSnapshotBody);
             if (!productSnapshot) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Internal server error"
-                });
+                return new ResponseBuilder().internalServerError(res);
+            }
+
+            // Reduce product variant stock
+            const newQuantity = productVariant.qty - transactionDetail.qty;
+            const reduceProductVariantStockResult = new ProductDetailService().updateStock(newQuantity, productVariant.id);
+            if (!reduceProductVariantStockResult) {
+                return new ResponseBuilder().internalServerError(res);
             }
 
             // Create transaction detail DTO (Data Transfer Object)
@@ -272,20 +282,21 @@ export class TransactionController {
             // Store transaction detail
             const storeTransactionDetailResult = await new TransactionDetailService().store(transactionDetailBody);
             if (!storeTransactionDetailResult) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Internal server error!"
-                });
+                return new ResponseBuilder().internalServerError(res);
             }
         }
 
-        return res.status(201).json({
-            success: true,
-            message: "Transaction was created.",
-            data: await new TransactionService().findOne(transaction.id)
-        });
+        const data = await new TransactionService().findOne(transaction.id);
+        return new ResponseBuilder().storeResponse(res, true, `transaction`, data);
     }
 
+    /**
+     * Update transaction
+     * @param req.body
+     * @param req.param.id
+     * @param res 
+     * @param next 
+     */
     async update(req: Request, res: Response, next: NextFunction) {
         // Request body mapping
         const body: {
@@ -301,6 +312,9 @@ export class TransactionController {
                 }
             }[]
         } = req.body;
+        
+        // Get transaction details array
+        const transactionDetails = body.transactionDetails;
 
         // Get parameter request
         const id = req.params.id;
@@ -312,10 +326,7 @@ export class TransactionController {
          */ 
         const selectedTransaction = await new TransactionService().findOne(id);
         if (!selectedTransaction) {
-            return res.status(400).json({
-                success: false,
-                message: `Transaction identified by ${id} not found!`
-            });
+            return new ResponseBuilder().findOneResponse(res, false, `transaction`);
         }
 
         // Validate request
@@ -365,15 +376,29 @@ export class TransactionController {
             errors.array().forEach(err => {
                 errorMessages[err.param] = err.msg;
             });
-            return res.json({
-                success: false,
-                message: "Failed to create transaction!",
-                errors: errorMessages
-            });
+            return new ResponseBuilder().updateResponse(res, false, `transaction`, errorMessages);
         }
         // End validate request
 
-        // return res.json(body);
+        // Check transaction details body
+        const transactionDetailErrors: any = {};
+        for (let i = 0; i < transactionDetails.length; i ++) {
+            const transactionDetail = transactionDetails[i];
+            const productVariant = await new ProductDetailService().findOne(transactionDetail.productSnapshot.productVariantId);
+
+            // Check availability of product variant
+            if (!productVariant) {
+                transactionDetailErrors[`transactionDetails[${i}].productVariantId`] = "Product variant not found!";
+            }
+            // Check product variant stock
+            else if (productVariant && !(productVariant.qty > transactionDetail.productSnapshot.qty)) {
+                transactionDetailErrors[`transactionDetails[${i}].qty`] = "Product quantity requested is exceed the limit!";
+            }
+        }
+
+        if (Object.keys(transactionDetailErrors).length > 0) {
+            return new ResponseBuilder().updateResponse(res, false, `transaction`, transactionDetailErrors);
+        }
         
         /**
          * Determine if request body has date value.
@@ -397,17 +422,13 @@ export class TransactionController {
         // Update transaction
         const transaction = await new TransactionService().update(transactionBody, id);
         if (!transaction) {
-            return res.status(400).json({
-                success: false,
-                message: "Internal server error"
-            });
+            return new ResponseBuilder().internalServerError(res);
         }
         
         /**
-         * Loop for update transaction detail body 
+         * Loop transactionDetails array 
          * to update transaction detail and product snapshot
-         */
-        const transactionDetails = body.transactionDetails;
+         */        
         for (let i = 0; i < transactionDetails.length; i++) {
             // Get transaction detail item [i] from transactionDetails array
             const transactionDetail = transactionDetails[i];
@@ -419,24 +440,7 @@ export class TransactionController {
              * and product snapshot modifcation coludn't be done.
              */
             const productVariant = await new ProductDetailService().findOne(transactionDetail.productSnapshot.productVariantId);
-            if (!productVariant) {
-                return res.json({
-                    success: false,
-                    message: `Product variant identified by ${transactionDetail.productSnapshot.productVariantId} doesn't exist!`
-                });
-            }
-
-            /**
-             * Validate quantity.
-             * If quantity exceed the available product quantity, it will return error
-             */
-            if (transactionDetail.productSnapshot.qty > productVariant.qty) {
-                return res.json({
-                    success: false,
-                    message: "Failed to create transaction!",
-                    [transactionDetails[i].productSnapshot.qty]: "Product quantity requested is exceed the limit!"
-                });
-            }
+            if (!productVariant) continue;
 
             /**
              * Determine discount value.
@@ -445,7 +449,7 @@ export class TransactionController {
              */
             let discount = 0;
             if (
-                transactionDetail.productSnapshot.discount ||
+                transactionDetail.productSnapshot.discount &&
                 transactionDetail.productSnapshot.discount !== undefined
             ) {
                 discount = transactionDetail.productSnapshot.discount;
@@ -477,14 +481,23 @@ export class TransactionController {
              * This section goal is to modify product snapshot.
              */
             if (transactionDetail.id && transactionDetail.productSnapshot.id) {
+                /** 
+                 * Reduce product variant stock
+                 * New product variant stock = (old product variant stock + old product snapshot stock) - new product snapshot stock
+                 */
+                const selectedProductSnapshot = await new ProductSnapshotService().findOne(transactionDetail.productSnapshot.id);
+                if (!selectedProductSnapshot) continue;
+                const newQuantity = (productVariant.qty + selectedProductSnapshot.qty) - transactionDetail.productSnapshot.qty;
+                const reduceProductVariantStockResult = new ProductDetailService().updateStock(newQuantity, productVariant.id);
+                if (!reduceProductVariantStockResult) {
+                    return new ResponseBuilder().internalServerError(res);
+                }
+                
                 // Update product snapshot
                 const productSnapshot = await new ProductSnapshotService().update(productSnapshotBody, transactionDetail.productSnapshot.id);
                 if (!productSnapshot) {
-                    return res.status(400).json({
-                        success: false,
-                        message: "Internal server error!"
-                    });
-                }
+                    return new ResponseBuilder().internalServerError(res);
+                }                
             } 
 
             /** 
@@ -495,10 +508,14 @@ export class TransactionController {
                 // Store product snapshot 
                 const productSnapshot = await new ProductSnapshotService().store(productSnapshotBody);                    
                 if (!productSnapshot) {
-                    return res.status(400).json({
-                        success: false, 
-                        message: "Internal server error!"
-                    });
+                    return new ResponseBuilder().internalServerError(res);
+                }
+
+                // Reduce product variant stock
+                const newQuantity = productVariant.qty - transactionDetail.productSnapshot.qty;
+                const reduceProductVariantStockResult = new ProductDetailService().updateStock(newQuantity, productVariant.id);
+                if (!reduceProductVariantStockResult) {
+                    return new ResponseBuilder().internalServerError(res);
                 }
 
                 // Create transaction detail DTO (Data Transfer Object)
@@ -507,26 +524,35 @@ export class TransactionController {
                     productSnapshotId: productSnapshot.id
                 };
 
+                // Store transaction detail
                 const storeTransactionDetailResult = await new TransactionDetailService().store(transactionDetailBody);
                 if (!storeTransactionDetailResult) {
-                    return res.status(400).json({
-                        success: false,
-                        message: "Internal server error!"
-                    });
+                    return new ResponseBuilder().internalServerError(res);
                 }                
             }
         }
 
-        return res.json({
-            success: true,
-            message: `Transaction identified by ${id} was updated.`,
-            data: await new TransactionService().findOne(id)
-        });
+        const data = await new TransactionService().findOne(id)
+        return new ResponseBuilder().updateResponse(res, false, `transaction`, data);
     }
 
+    /**
+     * Delete transaction
+     * @param req.params.id
+     * @param res 
+     * @param next 
+     */
     async delete(req: Request, res: Response, next: NextFunction) {
         const id = req.params.id;
+
+        // Check if transaction already exist
+        const selectedTransaction = await new TransactionService().findOne(id);
+        if (!selectedTransaction) {
+            return new ResponseBuilder().findOneResponse(res, false, `transaction`);
+        }
+
+        // Delete transaction
         const product = await new TransactionService().delete(id);
-        res.json(product);
+        return new ResponseBuilder().deleteResponse(res, true, `transaction`);
     }
 }

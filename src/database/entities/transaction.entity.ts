@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Timestamp, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Timestamp, UpdateDateColumn } from "typeorm";
 import { TransactionDetail } from "./transaction-detail.entity";
 
 @Entity({name: "transactions"})
@@ -20,4 +20,7 @@ export class Transaction {
 
     @OneToMany(type => TransactionDetail, transactionDetail => transactionDetail.transaction)
     transactionDetails!: TransactionDetail;
+
+    @DeleteDateColumn()
+    deletedAt!: Timestamp;
 }

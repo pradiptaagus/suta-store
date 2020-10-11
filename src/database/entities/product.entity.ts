@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Timestamp, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Timestamp, UpdateDateColumn } from "typeorm";
 import { ProductDetail } from "./product-detail.entity";
 import { ProductSnapshot } from "./product-snapshot.entity";
 
@@ -13,14 +13,14 @@ export class Product {
     @Column({type: "varchar", length: 100})
     name!: string;
 
-    @Column({type: "smallint"})
-    isActive!: number;
-
     @CreateDateColumn()
     createdAt!: Timestamp;
     
     @UpdateDateColumn()
     updatedAt!: Timestamp;
+
+    @DeleteDateColumn()
+    deletedAt!: string;
 
     @OneToMany(type => ProductDetail, productDetail => productDetail.product)
     productVariants!: ProductDetail;

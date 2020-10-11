@@ -1,6 +1,6 @@
 import { getConnection, Repository } from "typeorm";
 import { ProductDetail } from "../../database/entities/product-detail.entity";
-import { ProductDetailDTO } from "./product-detail.dto";
+import { StoreProductDetailDTO, UpdateProductDetailDTO } from "./product-detail.dto";
 import { ProductService } from "../product/product.service";
 
 export class ProductDetailService {
@@ -24,7 +24,7 @@ export class ProductDetailService {
         });
     }
 
-    async store(body: ProductDetailDTO): Promise<ProductDetail|undefined> {
+    async store(body: StoreProductDetailDTO): Promise<ProductDetail|undefined> {
         const product = await this.productService.findOne(body.productId)
         if (product) {
             const productDetail = new ProductDetail();
@@ -38,7 +38,7 @@ export class ProductDetailService {
         }        
     }
 
-    async update(body: ProductDetailDTO, id: string): Promise<ProductDetail | undefined> {
+    async update(body: UpdateProductDetailDTO, id: string): Promise<ProductDetail | undefined> {
         const productDetail = await this.productDetailRepository.findOne(id);
         const product = await this.productService.findOne(body.productId);
 
@@ -53,6 +53,15 @@ export class ProductDetailService {
         }
     }
 
+    async updateStock(qty: number, id: string) {
+        const productDetail = await this.productDetailRepository.findOne(id);
+        if (productDetail) {
+            productDetail.qty = qty;
+            const result = await this.productDetailRepository.save(productDetail);
+            return result;
+        }
+    }
+
     async delete(id: string): Promise<true | undefined> {
         const productDetail = await this.productDetailRepository.findOne(id);
         
@@ -60,7 +69,5 @@ export class ProductDetailService {
             this.productDetailRepository.remove(productDetail);
             return true;
         }
-
-        return;
     }
 }

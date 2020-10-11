@@ -1,13 +1,16 @@
-export interface ProductDTO {
-    code: string;
-    name: string;
-    isActive: number;
-}
-
 export interface FindAllDTO {
     code?: string;
     name?: string;
-    isActive?: number;
     size?: number;
     page?: number;
+}
+
+export interface StoreProductDTO {
+    code: string;
+    name: string;
+}
+
+export interface UpdateProductDTO {
+    code: string;
+    name: string;
 }
