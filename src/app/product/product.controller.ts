@@ -3,7 +3,7 @@ import { ProductService } from "./product.service";
 import { check, validationResult } from "express-validator";
 import { ProductDetailService } from "../product-detail/product-detail.service";
 import { StoreProductDetailDTO, UpdateProductDetailDTO } from "../product-detail/product-detail.dto";
-import { FindAllDTO, StoreProductDTO, UpdateProductDTO } from "./product.dto";
+import { CountProductDto, FindAllProductDTO, StoreProductDTO, UpdateProductDTO } from "./product.dto";
 import { ResponseBuilder } from "../../helpers/response-builder.helper";
 
 export class ProductController {
@@ -32,16 +32,36 @@ export class ProductController {
     async findAll(req: Request, res: Response, next: NextFunction) {
         const size = req.query?.size ? +req.query.size : 10;
         const page = req.query?.page ? +req.query.page : 1;
-        const query: FindAllDTO = {
+        
+        const query: FindAllProductDTO = {
             code: req.query?.code?.toString(),
             name: req.query?.name?.toString(),
             size: size, 
             page: page
         }
 
+        const countQuery: CountProductDto = {
+            code: req.query?.code?.toString(),
+            name: req.query?.name?.toString()
+        }
+
         const products = await new ProductService().findAll(query);
+        const totalRecord = await new ProductService().totalRecord(countQuery);
+        const totalPage = Math.ceil(totalRecord / size);
+
         let status = products ? true : false;
-        return new ResponseBuilder().findResponse(res, status, `product`, products);
+
+        const data = {
+            data: products,
+            pagination: {
+                size: query.size,
+                page: query.page,
+                totalPage: totalPage,
+                totalRecord: totalRecord
+            }
+        }
+
+        return new ResponseBuilder().findResponse(res, status, `product`, data);
     }
 
     /**

@@ -1,6 +1,6 @@
 import { getConnection, Repository } from "typeorm";
 import { Product } from "../../database/entities/product.entity";
-import { StoreProductDTO, UpdateProductDTO, FindAllDTO } from "./product.dto";
+import { StoreProductDTO, UpdateProductDTO, FindAllProductDTO, CountProductDto } from "./product.dto";
 import { DateGenerator } from "../../helpers/date-generator.helper";
 
 export class ProductService {
@@ -10,45 +10,37 @@ export class ProductService {
         this.productRepository = getConnection().getRepository<Product>(Product);
     }
 
-    async findAll({code, name, size, page}: FindAllDTO): Promise<Product[]> {
-        const take = size ? size : 10;
-        const skip = page ? page : 1;
+    async totalRecord(query: CountProductDto) {
+        const code = query.code;
+        const name = query.name;
 
-        if (code && name) {
-            return await this.productRepository.find({
-                relations: ["productVariants"],
-                where: {
-                    code: code,
-                    name: name
-                },
-                take: take,
-                skip: take * (skip - 1)
-            });
-        } else if (code) {
-            return await this.productRepository.find({
-                relations: ["productVariants"],
-                where: {
-                    code: code
-                },
-                take: take,
-                skip: take * (skip - 1)
-            });
-        } else if (name) {
-            return await this.productRepository.find({
-                relations: ["productVariants"],
-                where: {
-                    name: name
-                },
-                take: take,
-                skip: take * (skip - 1)
-            });
-        } else {
-            return await this.productRepository.find({
-                relations: ["productVariants"],
-                take: take,
-                skip: take * (skip - 1)
-            });
-        }
+        const whereClause: Record<string, any> = {};
+        if (code) whereClause.code = code;
+        if (name) whereClause.name = name;
+
+        return await this.productRepository.count({
+            relations: ["productVariants"],
+            where: whereClause
+        });
+    }
+
+    async findAll(query: FindAllProductDTO): Promise<Product[]> {
+        console.log(query)
+        const take = query.size ? query.size : 10;
+        const skip = query.page ? (query.page - 1) * take : 1;
+        const code = query.code;
+        const name = query.name;
+
+        const whereClause: Record<string, any> = {};
+        if (code) whereClause.code = code;
+        if (name) whereClause.name = name;
+
+        return await this.productRepository.find({
+            relations: ["productVariants"],
+            where: whereClause,
+            take: take,
+            skip: skip
+        });
     }
 
     async findOne(id: string): Promise<Product|undefined> {
