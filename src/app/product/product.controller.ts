@@ -205,7 +205,7 @@ export class ProductController {
             .isLength({min: 6}).bail().withMessage("Code field length minimum 6 characters!")
             .custom(async value => {
                 const product = await (await new ProductService().findAll({code: value, size: 1})).filter(item => {
-                    return item.id !== id;
+                    return item.code !== value;
                 });
                 if (product.length > 0) {
                     return Promise.reject("Code already is use!")
