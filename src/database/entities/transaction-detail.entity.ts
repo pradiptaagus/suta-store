@@ -7,7 +7,7 @@ export class TransactionDetail {
     @PrimaryGeneratedColumn("uuid")
     id!: string;
 
-    @ManyToOne(type => Transaction, transaction => transaction.transactionDetails)
+    @ManyToOne(type => Transaction, transaction => transaction.transactionDetail)
     transaction!: Transaction;
 
     @ManyToOne(type => ProductSnapshot, productSnaphot => productSnaphot.transactionDetail)

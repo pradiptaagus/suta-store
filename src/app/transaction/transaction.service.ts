@@ -1,6 +1,6 @@
-import { getConnection, Raw, Repository } from "typeorm";
+import { Between, getConnection, Raw, Repository } from "typeorm";
 import { Transaction } from "../../database/entities/transaction.entity";
-import { FindAllDTO, StoreTransactionDTO, UpdateTransctionDTO } from "./transaction.dto";
+import { CountTransactionDTO, FindAllTransactionDTO, StoreTransactionDTO, UpdateTransctionDTO } from "./transaction.dto";
 import { DateGenerator } from "../../helpers/date-generator.helper";
 
 export class TransactionService {
@@ -10,39 +10,50 @@ export class TransactionService {
         this.transactionRepository = getConnection().getRepository<Transaction>(Transaction);
     }
 
-    async totalRecord() {
-        return await this.transactionRepository.count();
+    async totalRecord(query: CountTransactionDTO) {
+        const startDate = query.startDate;
+        const endDate = query.endDate;
+
+        const whereClause: Record<string, any> = {};
+        if (startDate && endDate) whereClause.date = Between(startDate, endDate);
+
+        return await this.transactionRepository.count({
+            join: {
+                alias: "transaction",
+                leftJoin: {
+                    transactionDetail: "transaction.transactionDetail",
+                    productSnapshot: "transactionDetail.productSnapshot",
+                    productVariant: "productSnapshot.productVariant",
+                    product: "productVariant.product"
+                }
+            },
+            where: whereClause
+        });
     }
 
-    async findAll({size, page, startDate, endDate}: FindAllDTO): Promise<Transaction[]> {
-        const take = size ? size : 10;
-        const skip = page ? page-1 : 0;
+    async findAll(query: FindAllTransactionDTO): Promise<Transaction[]> {
+        const take = query.size ? query.size : 10;
+        const skip = query.page ? (query.page - 1) * take : 1;
+        const startDate = query.startDate;
+        const endDate = query.endDate;
 
-        if (startDate !== undefined && endDate !== undefined) {
-            return await this.transactionRepository
-            .createQueryBuilder("transactions")
-            .leftJoinAndSelect("transactions.transactionDetails", "transaction_details")
-            .leftJoinAndSelect("transaction_details.productSnapshot", "product_snapshots")
-            .leftJoinAndSelect("product_snapshots.productVariant", "product_details")
-            .where("transactions.date between :startDate and :endDate", {startDate: startDate, endDate: endDate})
-            .take(take)
-            .skip(skip)
-            .getMany();
-        } else {
-            return await this.transactionRepository.find({
-                join: {
-                    alias: "transaction",
-                    leftJoinAndSelect: {
-                        transactionDetail: "transaction.transactionDetails",
-                        productSnapshot: "transactionDetail.productSnapshot",
-                        productVariant: "productSnapshot.productVariant",
-                        product: "productVariant.product"
-                    }
-                },
-                take: take,
-                skip: skip
-            });
-        }
+        const whereClause: Record<string, any> = {};
+        if (startDate && endDate) whereClause.date = Between(startDate, endDate);
+
+        return await this.transactionRepository.find({
+            join: {
+                alias: "transaction",
+                leftJoinAndSelect: {
+                    transactionDetail: "transaction.transactionDetail",
+                    productSnapshot: "transactionDetail.productSnapshot",
+                    productVariant: "productSnapshot.productVariant",
+                    product: "productVariant.product"
+                }
+            },
+            where: whereClause,
+            take: take,
+            skip: skip
+        });
     }
 
     async findOne(id: string): Promise<Transaction|undefined> {
@@ -50,7 +61,7 @@ export class TransactionService {
             join: {
                 alias: "transaction",
                 leftJoinAndSelect: {
-                    transactionDetail: "transaction.transactionDetails",
+                    transactionDetail: "transaction.transactionDetail",
                     productSnapshot: "transactionDetail.productSnapshot",
                     productVariant: "productSnapshot.productVariant",
                     product: "productVariant.product"

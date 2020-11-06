@@ -1,6 +1,11 @@
-export interface FindAllDTO {
+export interface FindAllTransactionDTO {
     size: number;
     page: number;
+    startDate?: string;
+    endDate?:string;
+}
+
+export interface CountTransactionDTO {
     startDate?: string;
     endDate?:string;
 }

@@ -7,7 +7,7 @@ import { ProductSnapshotDTO } from "../product-snapshot/product-snapshot.dto";
 import { ProductSnapshotService } from "../product-snapshot/product-snapshot.service";
 import validator from "validator";
 import { ProductDetailService } from "../product-detail/product-detail.service";
-import { FindAllDTO, StoreTransactionDTO, UpdateTransctionDTO } from "./transaction.dto";
+import { CountTransactionDTO, FindAllTransactionDTO, StoreTransactionDTO, UpdateTransctionDTO } from "./transaction.dto";
 import { DateValidator } from "../../helpers/date-validator.helper";
 import { ResponseBuilder } from "../../helpers/response-builder.helper";
 
@@ -47,16 +47,22 @@ export class TransactionController {
             return new ResponseBuilder().customResponse(res, false, `Start date and end date value should be date!`);
         }
 
-        const query: FindAllDTO = {
+        const query: FindAllTransactionDTO = {
             size: size, 
             page: page,
             startDate: startDate,
             endDate: endDate
         }
 
+        const countQuery: CountTransactionDTO = {
+            startDate: startDate,
+            endDate: endDate
+        }
+
         const products = await new TransactionService().findAll(query);
-        const totalRecord = await new TransactionService().totalRecord();
+        const totalRecord = await new TransactionService().totalRecord(countQuery);
         const totalPage = Math.ceil(totalRecord / size);
+        
         const data = {
             data: products,
             pagination: {

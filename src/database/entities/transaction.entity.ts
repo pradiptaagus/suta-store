@@ -18,8 +18,8 @@ export class Transaction {
     @UpdateDateColumn()
     updatedAt!: Timestamp;
 
-    @OneToMany(type => TransactionDetail, transactionDetail => transactionDetail.transaction)
-    transactionDetails!: TransactionDetail;
+    @OneToMany(type => TransactionDetail, trxDetail => trxDetail.transaction)
+    transactionDetail!: TransactionDetail;
 
     @DeleteDateColumn()
     deletedAt!: Timestamp;
