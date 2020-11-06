@@ -1,6 +1,5 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Timestamp, UpdateDateColumn } from "typeorm";
 import { ProductDetail } from "./product-detail.entity";
-import { ProductSnapshot } from "./product-snapshot.entity";
 
 @Entity({name: "products"})
 export class Product {
@@ -23,5 +22,5 @@ export class Product {
     deletedAt!: string;
 
     @OneToMany(type => ProductDetail, productDetail => productDetail.product)
-    productVariants!: ProductDetail;
+    productVariant!: ProductDetail;
 }

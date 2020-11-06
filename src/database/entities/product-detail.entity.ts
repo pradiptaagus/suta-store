@@ -12,7 +12,7 @@ export class ProductDetail {
     @PrimaryGeneratedColumn("uuid")
     id!: string;
 
-    @ManyToOne(type => Product, product => product.productVariants)
+    @ManyToOne(type => Product, product => product.productVariant)
     product!: Product;
 
     @Column({type: "varchar", length: 20})
