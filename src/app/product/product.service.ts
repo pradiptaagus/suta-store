@@ -19,7 +19,7 @@ export class ProductService {
         if (name) whereClause.name = name;
 
         return await this.productRepository.count({
-            relations: ["productVariants"],
+            relations: ["productVariant"],
             where: whereClause
         });
     }
@@ -36,7 +36,7 @@ export class ProductService {
         if (name) whereClause.name = name;
 
         return await this.productRepository.find({
-            relations: ["productVariants"],
+            relations: ["productVariant"],
             where: whereClause,
             take: take,
             skip: skip
@@ -45,7 +45,7 @@ export class ProductService {
 
     async findOne(id: string): Promise<Product|undefined> {
         return await this.productRepository.findOne(id, {
-            relations: ["productVariants"]
+            relations: ["productVariant"]
         });
     }
 
