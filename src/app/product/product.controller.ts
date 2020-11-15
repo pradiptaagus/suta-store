@@ -22,10 +22,25 @@ export class ProductController {
         this.router.put(`${this.path}/:id`, this.update);
         this.router.delete(`${this.path}/:id`, this.delete);
         this.router.get(this.viewPath, this.index);
+        this.router.get(`${this.viewPath}/new`, this.add);
+        this.router.get(`${this.viewPath}/edit/:id`, this.edit);
+        this.router.get(`${this.viewPath}/:id`, this.add);
     }
 
     index(req: Request, res: Response) {
-        res.render("index.ejs");
+        res.render("product/index.ejs");
+    }
+
+    add(req: Request, res: Response) {
+        res.render("product/add.ejs");
+    }
+
+    edit(req: Request, res: Response) {
+        res.render("product/edit.ejs");
+    }
+
+    view(req: Request, res: Response) {
+        res.render("product/view.ejs");
     }
 
     /**
