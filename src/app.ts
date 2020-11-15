@@ -1,5 +1,6 @@
 import express, { Application, json, urlencoded } from "express";
 import cors from "cors";
+import path from "path";
 
 export class App {
     public app: Application;
@@ -16,6 +17,10 @@ export class App {
         this.app.use(cors());
         this.app.use(json());
         this.app.use(urlencoded({extended: true}));
+        this.app.set("views", path.join(__dirname, "views"));
+        this.app.set("view engine", "ejs");
+        this.app.use('/js', express.static(path.join(__dirname, "public/assets/js")));
+        this.app.use('/css', express.static(path.join(__dirname, "public/assets/css")));
     }
 
     private initializeControllers(controllers: any[]) {

@@ -7,7 +7,8 @@ import { CountProductDto, FindAllProductDTO, StoreProductDTO, UpdateProductDTO }
 import { ResponseBuilder } from "../../helpers/response-builder.helper";
 
 export class ProductController {
-    private path = "/product";
+    private path = "/api/product";
+    private viewPath = "/product";
     public router = Router();
 
     constructor() {
@@ -20,6 +21,11 @@ export class ProductController {
         this.router.post(this.path, this.store);
         this.router.put(`${this.path}/:id`, this.update);
         this.router.delete(`${this.path}/:id`, this.delete);
+        this.router.get(this.viewPath, this.index);
+    }
+
+    index(req: Request, res: Response) {
+        res.render("index.ejs");
     }
 
     /**
