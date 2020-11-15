@@ -19,8 +19,8 @@ export class App {
         this.app.use(urlencoded({extended: true}));
         this.app.set("views", path.join(__dirname, "views"));
         this.app.set("view engine", "ejs");
-        this.app.use('/js', express.static(path.join(__dirname, "public/assets/js")));
-        this.app.use('/css', express.static(path.join(__dirname, "public/assets/css")));
+        this.app.use('/js', express.static(path.join(__dirname, "public/js")));
+        this.app.use('/css', express.static(path.join(__dirname, "public/css")));
     }
 
     private initializeControllers(controllers: any[]) {
