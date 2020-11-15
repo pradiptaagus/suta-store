@@ -84,14 +84,11 @@ export class ProductController {
      * @param next 
      */
     async store(req: Request, res: Response, next: NextFunction) {
-        console.log(req.body);
         // Request body mapping
         const body: {
             name: string,
             code: string,
-            isActive: number,
             productVariants: {
-                productId: string,
                 qty: number,
                 price: number,
                 storageType: string,
