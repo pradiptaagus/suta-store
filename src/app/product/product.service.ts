@@ -1,4 +1,4 @@
-import { getConnection, Repository } from "typeorm";
+import { getConnection, Like, Repository } from "typeorm";
 import { Product } from "../../database/entities/product.entity";
 import { StoreProductDTO, UpdateProductDTO, FindAllProductDTO, CountProductDto } from "./product.dto";
 import { DateGenerator } from "../../helpers/date-generator.helper";
@@ -25,15 +25,15 @@ export class ProductService {
     }
 
     async findAll(query: FindAllProductDTO): Promise<Product[]> {
-        console.log(query)
         const take = query.size ? query.size : 10;
         const skip = query.page ? (query.page - 1) * take : 1;
         const code = query.code;
         const name = query.name;
 
-        const whereClause: Record<string, any> = {};
-        if (code) whereClause.code = code;
-        if (name) whereClause.name = name;
+        const whereClause: object[] = [];
+        if (code) whereClause.push({code: Like(`%${code}%`)});
+        if (name) whereClause.push({name: Like(`%${name}%`)});
+        console.log(whereClause)
 
         return await this.productRepository.find({
             relations: ["productVariant"],
@@ -43,7 +43,7 @@ export class ProductService {
         });
     }
 
-    async findOne(id: string): Promise<Product|undefined> {
+    async findOne(id: string): Promise<Product | undefined> {
         return await this.productRepository.findOne(id, {
             relations: ["productVariant"]
         });
@@ -59,7 +59,7 @@ export class ProductService {
 
     async update(body: UpdateProductDTO, id: string): Promise<Product | undefined> {
         const product = await this.productRepository.findOne(id);
-        
+
         if (product) {
             product.code = body.code;
             product.name = body.name;
@@ -70,7 +70,7 @@ export class ProductService {
 
     async delete(id: string): Promise<true | undefined> {
         const product = await this.productRepository.findOne(id);
-        
+
         if (product) {
             product.deletedAt = new DateGenerator().generateTimestamp();
             await this.productRepository.save(product);
