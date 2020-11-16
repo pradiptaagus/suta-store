@@ -13,10 +13,10 @@ export class Product {
     name!: string;
 
     @CreateDateColumn()
-    createdAt!: Timestamp;
+    createdAt!: string;
     
     @UpdateDateColumn()
-    updatedAt!: Timestamp;
+    updatedAt!: string;
 
     @DeleteDateColumn()
     deletedAt!: string;
