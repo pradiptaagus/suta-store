@@ -24,7 +24,7 @@ export class ProductController {
         this.router.get(this.viewPath, this.index);
         this.router.get(`${this.viewPath}/new`, this.add);
         this.router.get(`${this.viewPath}/edit/:id`, this.edit);
-        this.router.get(`${this.viewPath}/:id`, this.add);
+        this.router.get(`${this.viewPath}/:id`, this.view);
     }
 
     index(req: Request, res: Response) {
@@ -36,11 +36,15 @@ export class ProductController {
     }
 
     edit(req: Request, res: Response) {
-        res.render("product/edit.ejs");
+        res.render("product/edit.ejs", {
+            id: req.params.id
+        });
     }
 
     view(req: Request, res: Response) {
-        res.render("product/view.ejs");
+        res.render("product/detail.ejs", {
+            id: req.params.id
+        });
     }
 
     /**
@@ -94,6 +98,7 @@ export class ProductController {
     async findOne(req: Request, res: Response, next: NextFunction) {
         const id = req.params.id;
         const product = await new ProductService().findOne(id);
+        console.log(product)
         let status = product ? true : false;
         return new ResponseBuilder().findOneResponse(res, status, `product`, product);
     }
@@ -193,7 +198,6 @@ export class ProductController {
         const body: {
             name: string,
             code: string,
-            isActive: number,
             productVariants: {
                 id: string,
                 qty: number,
@@ -275,21 +279,8 @@ export class ProductController {
         const productVariants = body.productVariants;    
         for (let i = 0; i < productVariants.length; i++) {
             const productVariantId = productVariants[i].id;
-            const productVariant = await new ProductDetailService().findOne(productVariantId);
 
-            if (productVariant) {
-                const prodVar: UpdateProductDetailDTO = {
-                    productId: product.id,
-                    qty: productVariants[i].qty,
-                    price: productVariants[i].price,
-                    unit: productVariants[i].unit,
-                    storageType: productVariants[i].storageType
-                };
-                const updateProductDetailResult = await new ProductDetailService().update(prodVar, productVariantId);
-                if (!updateProductDetailResult) {
-                    return new ResponseBuilder().internalServerError(res);
-                }
-            } else {
+            if (!productVariantId) {
                 const prodVar: StoreProductDetailDTO = {
                     productId: product.id,
                     qty: productVariants[i].qty,
@@ -299,6 +290,24 @@ export class ProductController {
                 }
                 const storeProductDetailResult = await new ProductDetailService().store(prodVar);
                 if (!storeProductDetailResult) {
+                    return new ResponseBuilder().internalServerError(res);
+                }
+            } else if (productVariantId) {
+                const productVariant = await new ProductDetailService().findOne(productVariantId);
+                
+                if (productVariant) {
+                    const prodVar: UpdateProductDetailDTO = {
+                        productId: product.id,
+                        qty: productVariants[i].qty,
+                        price: productVariants[i].price,
+                        unit: productVariants[i].unit,
+                        storageType: productVariants[i].storageType
+                    };
+                    const updateProductDetailResult = await new ProductDetailService().update(prodVar, productVariantId);
+                    if (!updateProductDetailResult) {
+                        return new ResponseBuilder().internalServerError(res);
+                    }
+                } else {
                     return new ResponseBuilder().internalServerError(res);
                 }
             }
