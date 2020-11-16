@@ -1,7 +1,6 @@
-import { getConnection, Like, Repository } from "typeorm";
+import { getConnection, Like, Not, Repository } from "typeorm";
 import { Product } from "../../database/entities/product.entity";
 import { StoreProductDTO, UpdateProductDTO, FindAllProductDTO, CountProductDto } from "./product.dto";
-import { DateGenerator } from "../../helpers/date-generator.helper";
 
 export class ProductService {
     private productRepository: Repository<Product>;
@@ -31,9 +30,8 @@ export class ProductService {
         const name = query.name;
 
         const whereClause: object[] = [];
-        if (code) whereClause.push({code: Like(`%${code}%`)});
-        if (name) whereClause.push({name: Like(`%${name}%`)});
-        console.log(whereClause)
+        if (code) whereClause.push({code: Like(`%${code}%`), deletedAt: null});
+        if (name) whereClause.push({name: Like(`%${name}%`), deletedAt: null});
 
         return await this.productRepository.find({
             relations: ["productVariant"],
@@ -72,8 +70,7 @@ export class ProductService {
         const product = await this.productRepository.findOne(id);
 
         if (product) {
-            product.deletedAt = new DateGenerator().generateTimestamp();
-            await this.productRepository.save(product);
+            await this.productRepository.softDelete(id);
             return true;
         }
     }
