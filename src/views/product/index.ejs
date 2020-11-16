@@ -92,7 +92,6 @@
                 url: "/api/product" + (params.length > 0 ? "?" + params.join("&") : ""),
                 contentType: "application/json",
                 success: function(result) {
-                    console.log(result);
                     productData = result.data.data;
                     paginationData = result.data.pagination;
 
@@ -115,9 +114,10 @@
                     '<tr>' +
                         '<td>' + (index + 1 + ((paginationData.page - 1 )* paginationData.size)) + '</td>' +
                         '<td>' + product.code + '</td>' +
-                        '<th>' + product.name + '</th>' +
+                        '<td>' + product.name + '</td>' +
                         '<td>'+
-                            '<a href="/product/edit/' + product.id + '" class="btn btn-primary btn-sm">Sunting</a>' +
+                            '<a href="/product/' + product.id + '" class="btn btn-success btn-sm">Detail</a>' +
+                            '<a href="/product/edit/' + product.id + '" class="btn btn-primary btn-sm ml-2">Sunting</a>' +
                             '<button class="btn btn-danger btn-sm ml-2">Hapus</button>' +
                         '</td>' +
                     '</tr>'
