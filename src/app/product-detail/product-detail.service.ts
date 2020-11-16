@@ -66,7 +66,7 @@ export class ProductDetailService {
         const productDetail = await this.productDetailRepository.findOne(id);
         
         if (productDetail) {
-            this.productDetailRepository.remove(productDetail);
+            await this.productDetailRepository.softDelete(id);
             return true;
         }
     }
