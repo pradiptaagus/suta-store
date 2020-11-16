@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, Timestamp, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, Timestamp, UpdateDateColumn } from "typeorm";
 import { ProductSnapshot } from "./product-snapshot.entity";
 import { Product } from "./product.entity";
 
@@ -28,10 +28,13 @@ export class ProductDetail {
     storageType!: string; 
 
     @CreateDateColumn()
-    createdAt!: Timestamp;
+    createdAt!: string;
 
     @UpdateDateColumn()
-    updatedAt!: Timestamp;
+    updatedAt!: string;
+
+    @DeleteDateColumn()
+    deletedAt!: string;
 
     @OneToMany(type => ProductSnapshot, productSnapshot => productSnapshot.productVariant)
     productSnapshot!: ProductSnapshot;
