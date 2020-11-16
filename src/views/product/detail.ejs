@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Produk</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+    <link rel="stylesheet" href="/css/simplePagination.css">
+</head>
+<body>
+    <div class="container my-5">
+        <h1 class="mb-3">Detail Produk</h1>
+        <div class="row mb-3">
+            <div class="col-12 col-md-3 font-weight-bold">Kode produk</div>
+            <div class="col-9">
+                <span class="d-none d-md-inline-block">:</span>
+                <span id="code"></span>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-12 col-md-3 font-weight-bold">Nama produk</div>
+            <div class="col-9">
+                <span class="d-none d-md-inline-block">:</span>
+                <span id="name"></span>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-12 col-md-3 mb-3 mb-md-0 font-weight-bold">Jenis</div>
+            <div class="col-12 col-md-9" id="variant"></div>
+        </div>
+        <a href="/product" class="btn btn-secondary">Kembali</a>
+        <a href="/product/edit/<%=id%>" class="btn btn-success ml-2">Sunting produk</a>
+        <button class="btn btn-danger ml-2">Hapus produk</button>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js"></script>
+    <script src="/js/jquery.simplePagination.js"></script>
+    <script>
+        $("document").ready(function() {
+            fetchData("<%=id%>");
+        });
+
+        function fetchData(id) {
+            $.ajax({
+                method: "get",
+                url: "/api/product/" + id,
+                contentType: "application/json",
+                success: function(result) {
+                    const data = result.data;
+                    $("#code").html(data.code);
+                    $("#name").html(data.name);
+
+                    renderProductVariant(data.productVariant)
+
+                }, error: function(error) {
+                    console.log(error);
+                }
+            });
+        }
+
+        function renderProductVariant(productVariants) {
+            const el = $("#variant");
+            el.html("");
+            productVariants.forEach(productVariant => {
+                if (!productVariant.deletedAt) {
+                    el.append(
+                        '<div class="border rounded p-3 w-100 mb-3">' +
+                            '<div class="row mb-3">' +
+                                '<div class="col-md-5 font-weight-bold">Lokasi penyimpanan</div>' +
+                                '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> ' + (productVariant.storageType === "warehouse" ? "Gudang" : "Toko") + '</div>' +
+                            '</div>' +
+                            '<div class="row mb-3">' +
+                                '<div class="col-md-5 font-weight-bold">Harga</div>' +
+                                '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> Rp.' + productVariant.price + '</div>' +
+                            '</div>' +
+                            '<div class="row">' +
+                                '<div class="col-md-5 font-weight-bold">Stok</div>' +
+                                '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> ' + productVariant.qty + ' ' + productVariant.unit + '</div>' +
+                            '</div>' +
+                        '</div>'
+                    );
+                }
+            });
+        }
+    </script>
+</body>
+</html>
