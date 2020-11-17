@@ -4,3 +4,4 @@ yarn-error.log
 .env
 ormconfig.json
 .DS_Store
+yarn.lock
