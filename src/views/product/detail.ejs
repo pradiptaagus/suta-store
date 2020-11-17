@@ -121,6 +121,7 @@
                 method: "delete",
                 url: "/api/product/<%=id%>",
                 success: function(result) {
+                    $("#deleteProductModal").modal("hide");
                     alert("Produk berhasil dihapus");
                     window.location.href = "/product";
                 },
