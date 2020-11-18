@@ -15,12 +15,14 @@
                 <label for="code" class="col-12 col-md-3 col-form-label">Kode produk</label>
                 <div class="col-9">
                     <input class="form-control" type="text" name="code" id="code">
+                    <div class="invalid-feedback" id="codeError"></div>
                 </div>
             </div>
             <div class="form-group row">
                 <label for="name" class="col-12 col-md-3 col-form-label">Nama produk</label>
                 <div class="col-9">
                     <input class="form-control" type="text" name="name" id="name">
+                    <div class="invalid-feedback" id="nameError"></div>
                 </div>
             </div>
             <div class="row mb-3">
@@ -156,7 +158,6 @@
                     storageType: "",
                     unit: ""
                 });
-                console.log("masuk")
 
                 renderProductVariant(productVariantData)
             });
@@ -171,11 +172,8 @@
 
         function initDeleteProductVariant() {
             $("button[name=deleteProductVariantBtn]").click(function() {
-                console.log("tes")
                 const dataIndex = $(this).data("index");
                 const productVariant = productVariantData.splice(dataIndex, 1);
-                console.log(productVariantData)
-                console.log(productVariant)
 
                 $.ajax({
                     method: "delete",
@@ -183,6 +181,7 @@
                     success: function(result) {
                         renderProductVariant(productVariantData);
                         $("#deleteProductVariantModal").modal("hide");
+                        alert("Varian terhapus");
                     },
                     error: function(error) {
                         console.log(error);
@@ -204,51 +203,71 @@
                         productVariants: productVariantData
                     },
                     success: function(result) {
-                        console.log(result);
                         $("input").removeClass("is-invalid");
                         $("select").removeClass("is-invalid");
+                        alert("Perubahan tersimpan");
                     },
                     error: function(error) {
-                        const errorData = error.responseJSON.errors;
-                        errors = errorData;
-                        if (errorData) {
-                            productVariantData.forEach((productVariant, index) => {
-                                if ("productVariants["+index+"].storageType" in errorData) {
-                                    $("select[name='storageType["+index+"]']").addClass("is-invalid");
-                                    const msg = errorData["productVariants["+index+"].storageType"];
-                                    $("#storageTypeError-"+index+"").html(msg);
-                                } else {
-                                    $("select[name='storageType["+index+"]']").removeClass("is-invalid");
-                                }
-
-                                if ("productVariants["+index+"].price" in errorData) {
-                                    $("input[name='price["+index+"]']").addClass("is-invalid");
-                                    const msg = errorData["productVariants["+index+"].price"];
-                                    $("#priceError-"+index+"").html(msg);
-                                } else {
-                                    $("input[name='price["+index+"]']").removeClass("is-invalid");
-                                }
-
-                                if ("productVariants["+index+"].qty" in errorData) {
-                                    $("input[name='qty["+index+"]']").addClass("is-invalid");
-                                    const msg = errorData["productVariants["+index+"].qty"];
-                                    $("#qtyError-"+index+"").html(msg);
-                                } else {
-                                    $("input[name='qty["+index+"]']").removeClass("is-invalid");
-                                }
-
-                                if ("productVariants["+index+"].unit" in errorData) {
-                                    $("input[name='unit["+index+"]']").addClass("is-invalid");
-                                    const msg = errorData["productVariants["+index+"].unit"];
-                                    $("#unitError-"+index+"").html(msg);
-                                } else {
-                                    $("input[name='unit["+index+"]']").removeClass("is-invalid");
-                                }
-                            });
-                        }
+                        errors = error.responseJSON.errors;
+                        renderError();
+                        alert("Perubahan gagal disimpan!");
                     }
                 });
             });
+        }
+
+        function renderError() {
+            if (errors) {
+                if (errors.hasOwnProperty("code")) {
+                    const msg = errors.code;
+                    $("#codeError").text(msg);
+                    $("#code").addClass("is-invalid")
+                } else {
+                    $("#code").removeClass("is-invalid");
+                }
+
+                if (errors.hasOwnProperty("name")) {
+                    const msg = errors.name;
+                    $("#nameError").text(msg);
+                    $("#name").addClass("is-invalid")
+                } else {
+                    $("#name").removeClass("is-invalid");
+                }
+
+                productVariantData.forEach((productVariant, index) => {
+                    if ("productVariants["+index+"].storageType" in errors) {
+                        $("select[name='storageType["+index+"]']").addClass("is-invalid");
+                        const msg = errors["productVariants["+index+"].storageType"];
+                        $("#storageTypeError-"+index+"").html(msg);
+                    } else {
+                        $("select[name='storageType["+index+"]']").removeClass("is-invalid");
+                    }
+
+                    if ("productVariants["+index+"].price" in errors) {
+                        $("input[name='price["+index+"]']").addClass("is-invalid");
+                        const msg = errors["productVariants["+index+"].price"];
+                        $("#priceError-"+index+"").html(msg);
+                    } else {
+                        $("input[name='price["+index+"]']").removeClass("is-invalid");
+                    }
+
+                    if ("productVariants["+index+"].qty" in errors) {
+                        $("input[name='qty["+index+"]']").addClass("is-invalid");
+                        const msg = errors["productVariants["+index+"].qty"];
+                        $("#qtyError-"+index+"").html(msg);
+                    } else {
+                        $("input[name='qty["+index+"]']").removeClass("is-invalid");
+                    }
+
+                    if ("productVariants["+index+"].unit" in errors) {
+                        $("input[name='unit["+index+"]']").addClass("is-invalid");
+                        const msg = errors["productVariants["+index+"].unit"];
+                        $("#unitError-"+index+"").html(msg);
+                    } else {
+                        $("input[name='unit["+index+"]']").removeClass("is-invalid");
+                    }
+                });
+            }
         }
 
         function onChangeProductVariantInput(e) {
