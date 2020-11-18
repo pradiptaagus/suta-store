@@ -1,4 +1,4 @@
-import { getConnection, Like, Not, Repository } from "typeorm";
+import { getConnection, IsNull, Like, Not, Repository } from "typeorm";
 import { Product } from "../../database/entities/product.entity";
 import { StoreProductDTO, UpdateProductDTO, FindAllProductDTO, CountProductDto } from "./product.dto";
 
@@ -13,13 +13,18 @@ export class ProductService {
         const code = query.code;
         const name = query.name;
 
-        const whereClause: Record<string, any> = {};
-        if (code) whereClause.code = code;
-        if (name) whereClause.name = name;
+        const whereClause: string[] = [];
+        if (code) whereClause.push(`"product"."code" like "%${code}%"`);
+        if (name) whereClause.push(`"product"."name" like "%${name}%"`);
 
         return await this.productRepository.count({
-            relations: ["productVariant"],
-            where: whereClause
+            join: {
+                alias: "product",
+                leftJoin: {
+                    productVariant: "product.productVariant"
+                }
+            },
+            where: `${whereClause.length > 0 ? whereClause.join(" or ") + " and " : ""} "productVariant"."deletedAt" is null`,
         });
     }
 
@@ -29,13 +34,18 @@ export class ProductService {
         const code = query.code;
         const name = query.name;
 
-        const whereClause: object[] = [];
-        if (code) whereClause.push({code: Like(`%${code}%`), deletedAt: null});
-        if (name) whereClause.push({name: Like(`%${name}%`), deletedAt: null});
+        const whereClause: string[] = [];
+        if (code) whereClause.push(`"product"."code" like "%${code}%"`);
+        if (name) whereClause.push(`"product"."name" like "%${name}%"`);
 
         return await this.productRepository.find({
-            relations: ["productVariant"],
-            where: whereClause,
+            join: {
+                alias: "product",
+                leftJoinAndSelect: {
+                    productVariant: "product.productVariant"
+                }
+            },
+            where: `${whereClause.length > 0 ? whereClause.join(" or ") + " and " : ""} "productVariant"."deletedAt" is null`,
             take: take,
             skip: skip
         });
@@ -43,7 +53,13 @@ export class ProductService {
 
     async findOne(id: string): Promise<Product | undefined> {
         return await this.productRepository.findOne(id, {
-            relations: ["productVariant"]
+            join: {
+                alias: "product",
+                leftJoinAndSelect: {
+                    productVariant: "product.productVariant"
+                }
+            },
+            where: `"productVariant"."deletedAt" is null`
         });
     }
 
