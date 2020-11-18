@@ -24,7 +24,7 @@ export class ProductService {
                     productVariant: "product.productVariant"
                 }
             },
-            where: `${whereClause.length > 0 ? whereClause.join(" or ") + " and " : ""} "productVariant"."deletedAt" is null`,
+            where: `${whereClause.length > 0 ? whereClause.join(" or ") : ""}`,
         });
     }
 
@@ -35,7 +35,7 @@ export class ProductService {
         const name = query.name;
 
         const whereClause: string[] = [];
-        if (code) whereClause.push(`"product"."code" like '%${code}%'`);
+        if (code) whereClause.push(`("product"."code" like '%${code}%'`);
         if (name) whereClause.push(`"product"."name" like '%${name}%'`);
 
         return await this.productRepository.find({
@@ -45,7 +45,7 @@ export class ProductService {
                     productVariant: "product.productVariant"
                 }
             },
-            where: `${whereClause.length > 0 ? whereClause.join(" or ") + " and " : ""} "productVariant"."deletedAt" is null`,
+            where: `${whereClause.length > 0 ? whereClause.join(" or ") : ""}`,
             take: take,
             skip: skip
         });
@@ -58,8 +58,7 @@ export class ProductService {
                 leftJoinAndSelect: {
                     productVariant: "product.productVariant"
                 }
-            },
-            where: `"productVariant"."deletedAt" is null`
+            }
         });
     }
 
