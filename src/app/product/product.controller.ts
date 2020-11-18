@@ -306,8 +306,6 @@ export class ProductController {
                     if (!updateProductDetailResult) {
                         return new ResponseBuilder().internalServerError(res);
                     }
-                } else {
-                    return new ResponseBuilder().internalServerError(res);
                 }
             }
         }
