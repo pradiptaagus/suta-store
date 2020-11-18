@@ -98,7 +98,6 @@ export class ProductController {
     async findOne(req: Request, res: Response, next: NextFunction) {
         const id = req.params.id;
         const product = await new ProductService().findOne(id);
-        console.log(product)
         let status = product ? true : false;
         return new ResponseBuilder().findOneResponse(res, status, `product`, product);
     }
@@ -226,11 +225,11 @@ export class ProductController {
             .notEmpty().bail().withMessage("Code field is required!")
             .isLength({min: 6}).bail().withMessage("Code field length minimum 6 characters!")
             .custom(async value => {
-                const product = await (await new ProductService().findAll({code: value, size: 1})).filter(item => {
-                    return item.code !== value;
+                const product = await (await new ProductService().findAll({code: value})).filter(item => {
+                    return item.id !== id;
                 });
                 if (product.length > 0) {
-                    return Promise.reject("Code already is use!")
+                    return Promise.reject("Code is already in use!")
                 }
             })
             .run(req);
