@@ -82,7 +82,13 @@
                     $("#code").val(data.code);
                     $("#name").val(data.name);
 
-                    productVariantData = data.productVariant;
+                    let productVariantTemp = [];
+                    data.productVariant.forEach(productVariant => {
+                        if (!productVariant.deletedAt) {
+                            productVariantTemp.push(productVariant);
+                        }
+                    });
+                    productVariantData = productVariantTemp;
                     renderProductVariant(productVariantData);
                 }, error: function(error) {
                     console.log(error);
@@ -151,16 +157,20 @@
 
         function initAddProductVariant() {
             $("#addProduct").click(function() {
-                productVariantData.push({
-                    id: null,
-                    price: "",
-                    qty: "",
-                    storageType: "",
-                    unit: ""
-                });
-
-                renderProductVariant(productVariantData)
+                addProductVariant();
             });
+        }
+
+        function addProductVariant() {
+            productVariantData.push({
+                id: null,
+                price: "",
+                qty: "",
+                storageType: "",
+                unit: ""
+            });
+
+            renderProductVariant(productVariantData)
         }
 
         function initShowDeleteProductVariantDialog() {
@@ -174,19 +184,28 @@
             $("button[name=deleteProductVariantBtn]").click(function() {
                 const dataIndex = $(this).data("index");
                 const productVariant = productVariantData.splice(dataIndex, 1);
+                
+                if (productVariant[0].id) {
+                    $.ajax({
+                        method: "delete",
+                        url: "/api/product-detail/" + productVariant[0].id,
+                        success: function(result) {
+                            renderProductVariant(productVariantData);                            
+                            alert("Varian terhapus");
+                        },
+                        error: function(error) {
+                            console.log(error);
+                        }
+                    });
+                } else {
+                    renderProductVariant(productVariantData);
+                }
 
-                $.ajax({
-                    method: "delete",
-                    url: "/api/product-detail/" + productVariant[0].id,
-                    success: function(result) {
-                        renderProductVariant(productVariantData);
-                        $("#deleteProductVariantModal").modal("hide");
-                        alert("Varian terhapus");
-                    },
-                    error: function(error) {
-                        console.log(error);
-                    }
-                });
+                if (productVariantData.length === 0) {
+                    addProductVariant();
+                }
+
+                $("#deleteProductVariantModal").modal("hide");
             });
         }
 
@@ -232,6 +251,13 @@
                     $("#name").addClass("is-invalid")
                 } else {
                     $("#name").removeClass("is-invalid");
+                }
+
+                if (errors.hasOwnProperty("productVariants")) {
+                    $("#variant").html('<div class="invalid-feedback d-block" id="productVariantError">'+errors.productVariants+'</div>');
+                    renderAddVariant();
+                } else {
+                    $("#productVariantError").remove();
                 }
 
                 productVariantData.forEach((productVariant, index) => {
