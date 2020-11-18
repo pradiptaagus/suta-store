@@ -13,9 +13,9 @@ export class ProductService {
         const code = query.code;
         const name = query.name;
 
-        const whereClause: Record<string, any> = {};
-        if (code) whereClause.code = Like(`%${code}%`);
-        if (name) whereClause.name = Like(`%${name}%`);
+        const whereClause: object[] = [];
+        if (code) whereClause.push({code: Like(`%${code}%`)});
+        if (name) whereClause.push({name: Like(`%${name}%`)});
 
         return await this.productRepository.count({
             join: {
@@ -34,9 +34,9 @@ export class ProductService {
         const code = query.code;
         const name = query.name;
 
-        const whereClause: Record<string, any> = {};
-        if (code) whereClause.code = Like(`%${code}%`);
-        if (name) whereClause.name = Like(`%${name}%`);
+        const whereClause: object[] = [];
+        if (code) whereClause.push({code: Like(`%${code}%`)});
+        if (name) whereClause.push({name: Like(`%${name}%`)});
 
         return await this.productRepository.find({
             join: {
