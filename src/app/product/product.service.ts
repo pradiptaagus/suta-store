@@ -14,8 +14,8 @@ export class ProductService {
         const name = query.name;
 
         const whereClause: string[] = [];
-        if (code) whereClause.push(`"product"."code" like "%${code}%"`);
-        if (name) whereClause.push(`"product"."name" like "%${name}%"`);
+        if (code) whereClause.push(`"product"."code" like '%${code}%'`);
+        if (name) whereClause.push(`"product"."name" like '%${name}%'`);
 
         return await this.productRepository.count({
             join: {
@@ -35,8 +35,8 @@ export class ProductService {
         const name = query.name;
 
         const whereClause: string[] = [];
-        if (code) whereClause.push(`"product"."code" like "%${code}%"`);
-        if (name) whereClause.push(`"product"."name" like "%${name}%"`);
+        if (code) whereClause.push(`"product"."code" like '%${code}%'`);
+        if (name) whereClause.push(`"product"."name" like '%${name}%'`);
 
         return await this.productRepository.find({
             join: {
