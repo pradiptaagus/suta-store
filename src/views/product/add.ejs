@@ -124,10 +124,14 @@
 
         function initDeleteProductVariant() {
             $("button[name=deleteProductVariantBtn]").click(function() {
-                console.log("tes")
                 const dataIndex = $(this).data("index");
                 productVariantData.splice(dataIndex, 1);
-                renderProductVariant(productVariantData);
+
+                if (productVariantData.length === 0) {
+                    addProductVariant();
+                } else {
+                    renderProductVariant(productVariantData);
+                }
             });
         }
 
