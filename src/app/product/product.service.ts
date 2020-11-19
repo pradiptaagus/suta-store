@@ -30,7 +30,7 @@ export class ProductService {
 
     async findAll(query: FindAllProductDTO): Promise<Product[]> {
         const take = query.size ? query.size : 10;
-        const skip = query.page ? (query.page - 1) * take : 1;
+        const skip = query.page ? (query.page - 1) * take : 0;
         const code = query.code;
         const name = query.name;
 
