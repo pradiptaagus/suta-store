@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambah Transaksi</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2-bootstrap-theme/0.1.0-beta.10/select2-bootstrap.min.css" integrity="sha512-kq3FES+RuuGoBW3a9R2ELYKRywUEQv0wvPTItv3DSGqjpbNtGWVdvT8qwdKkqvPzT93jp8tSF4+oN4IeTEIlQA==" crossorigin="anonymous" />
+</head>
+<body>
+    <%- include("../partials/navbar.ejs") -%>
+    <div class="container my-5">
+        <h1 class="mb-3">Tambah Transaksi</h1>
+        <form method="post">
+            <div class="form-group row">
+                <label for="date" class="col-12 col-md-3 col-form-label">Tanggal transaksi</label>
+                <div class="col-md-9">
+                    <input class="form-control" type="date" name="date" id="date" style="width: initial;">
+                    <div class="invalid-feedback" id="dateError"></div>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="note" class="col-12 col-md-3 col-form-label">Catatan</label>
+                <div class="col-md-9">
+                    <textarea class="form-control" name="note" id="note" rows="5"></textarea>
+                    <div class="invalid-feedback" id="noteError"></div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-12 col-md-3 mb-3 mb-md-0">Barang</div>
+                <div class="col-12 col-md-9" id="productVariantList"></div>
+                <div class="col offset-md-3">
+                    <button id="addProductVariantButton" type="button" class="btn btn-primary">Tambah barang</button>
+                </div>
+            </div>
+            <div class="form-group row h1">
+                <div class="col-md-3">Total transaksi</div>
+                <div class="col-md-9" id="totalTransaction">: IDR.0,00</div>
+            </div>
+            <button type="submit" class="btn btn-success">Buat transaksi</button>
+            <a href="/transaction" class="btn btn-secondary ml-2">Kembali</a>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
+    <script>
+        let productVariantList = [];
+
+        $("document").ready(async function() {
+            addProductVariant();
+            await renderProductForm();
+        });
+
+        async function renderProductForm() {
+            $("#productVariantList").html("");
+            await productVariantList.forEach((product, index) => {
+                $("#productVariantList").append(
+                    '<div class="border rounded p-3 w-100 mb-3">'+
+                        '<div class="form-group row">'+
+                            '<label for="productVariant" class="col-md-3 col-form-label">Produk</label>'+
+                            '<div class="col-md-9">'+
+                                '<select class="custom-select" name="productVariant['+index+']" id="productVariant['+index+']" data-key="productVariantId" data-index="'+index+'" onchange="onChangeSelectProductVariant(this)"></select>'+
+                                '<div class="invalid-feedback" id="productVariantError-'+index+'"></div>'+
+                            '</div>'+
+                        '</div>'+
+                        '<div class="form-group row">'+
+                            '<label for="qty" class="col-md-3 col-form-label">Jumlah pembelian</label>'+
+                            '<div class="col-md-9">'+
+                                '<input class="form-control" type="text" name="qty['+index+']" id="qty['+index+']" value="'+product.qty+'" style="width: initial;" value="'+product.qty+'" data-key="qty" data-index="'+index+'" data-numberonly="true" onchange="onChangeProductVariantInput(this)">'+
+                                '<div class="invalid-feedback" id="qtyError-'+index+'"></div>'+
+                            '</div>'+
+                        '</div>'+
+                        '<div class="form-group row">'+
+                            '<label for="discount" class="col-md-3 col-form-label">Diskon (IDR)</label>'+
+                            '<div class="col-md-9">'+
+                                '<input class="form-control" type="text" name="discount['+index+']" id="discount['+index+']" value="'+product.discount+'" style="width: initial;" data-key="discount" data-index="'+index+'" data-numberonly="true" onchange="onChangeProductVariantInput(this)">'+
+                                '<div class="invalid-feedback" id="discountError"></div>'+
+                            '</div>'+
+                        '</div>'+
+                        '<button id="deleteProductVariantButton" data-index="'+index+'" class="btn btn-danger" type="button">Hapus barang</button>'+
+                    '</div>'
+                );
+
+                if (product.productVariantId) {
+                    $.ajax({
+                        method: "get",
+                        url: "/api/product-detail/" + product.productVariantId,
+                        contentType: "application/json",
+                        success: function(result) {
+                            const data = result.data;
+                            const options = new Option(`${data.product.name} - ${data.storageType} (tersisa ${data.qty} ${data.unit})`, data.id, true, true);
+                            $("select[name='productVariant["+index+"]']").append(options).trigger("change");
+                        },
+                        error: function(error) {
+                            console.log(error)
+                        }
+                    });
+                }
+            });
+
+            $("select").select2({
+                placeholder: "Pilih",
+                theme: "bootstrap",
+                ajax: {
+                    url: "/api/product-detail",
+                    data: function(params) {
+                        const query = {
+                            productName: params.term,
+                            size: 10,
+                            page: 1
+                        }
+                        return query;
+                    },
+                    processResults: function(data, params) {
+                        const pagination = data.data.pagination;
+                        return {
+                            results: $.map(data.data.data, function(item) {
+                                return {
+                                    text: `${item.product.name} - ${item.storageType} (tersisa ${item.qty} ${item.unit})`,
+                                    id: item.id
+                                }
+                            }),
+                            pagination: {
+                                more: pagination.page * pagination.size < pagination.totalRecord
+                            }
+                        }
+                    }
+                }
+            });
+            initAllowNumberOnly();
+            initDeleteProductVariant();
+        }
+
+        function addProductVariant() {
+            productVariantList.push({
+                productVariantId: null,
+                qty: 1,
+                discount: 0
+            });
+        }
+
+        function initAddProductVariant() {
+            $("#addProductVariantButton").click(function() {
+                addProductVariant();
+                renderProductForm();
+            });
+        }
+        initAddProductVariant();
+
+        function onChangeProductVariantInput(e) {
+            const el = $(e);
+            const key = el.data("key");
+            const value = el.val();
+            const index = el.data("index");
+            productVariantList[index][key] = value;
+        }
+
+        function initAllowNumberOnly() {
+            $("*[data-numberonly=true]").on("keypress", function(e) {
+                const ASCIICode = e.which ? e.which : e.keyCode;
+                if (ASCIICode > 31 && (ASCIICode < 48 || ASCIICode > 57)) {
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        function onChangeSelectProductVariant(e) {
+            const el = $(e);
+            const data = el.select2("data");
+            const id = data[0].id;
+            const key = el.data("key");
+            const index = el.data("index");
+            productVariantList[index][key] = id;
+        }
+
+        function initDeleteProductVariant() {
+            $("#deleteProductVariantButton").click(function() {
+                console.log("masuk")
+                const el = $(this);
+                const index = el.data("index");
+                if (productVariantList.length > 1) {
+                    productVariantList.splice(index, 1);
+                }
+                renderProductForm();
+            });
+        }
+    </script>
+</body>
+</html>
