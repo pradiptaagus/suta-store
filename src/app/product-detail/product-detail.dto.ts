@@ -1,3 +1,13 @@
+export interface FindAllProductDetailDto {
+    size?: number;
+    page?: number;
+    productName?: string;
+}
+
+export interface CountProductDetailDto {
+    productName?: string;
+}
+
 export interface StoreProductDetailDTO {
     productId: string;
     unit: string;
