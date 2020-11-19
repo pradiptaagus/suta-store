@@ -1,6 +1,6 @@
-import { getConnection, Repository } from "typeorm";
+import { getConnection, Like, Repository } from "typeorm";
 import { ProductDetail } from "../../database/entities/product-detail.entity";
-import { StoreProductDetailDTO, UpdateProductDetailDTO } from "./product-detail.dto";
+import { CountProductDetailDto, FindAllProductDetailDto, StoreProductDetailDTO, UpdateProductDetailDTO } from "./product-detail.dto";
 import { ProductService } from "../product/product.service";
 
 export class ProductDetailService {
@@ -12,15 +12,52 @@ export class ProductDetailService {
         this.productService = new ProductService();
     }
 
-    async findAll(): Promise<ProductDetail[]> {
+    async totalRecord(query: CountProductDetailDto) {
+        const productName = query.productName;
+
+        let whereClause: string = `"product"."deletedAt" is null`;
+        if (productName) whereClause = `"product"."name" like '%${productName}%' and "product"."deletedAt" is null`;
+
+        return await this.productDetailRepository.count({
+            join: {
+                alias: "productDetail",
+                leftJoin: {
+                    product: "productDetail.product"
+                }
+            },
+            where: whereClause
+        });
+    }
+
+    async findAll(query: FindAllProductDetailDto): Promise<ProductDetail[]> {
+        const take = query.size ? query.size : 10;
+        const skip = query.page ? (query.page - 1) * take : 0;
+        const productName = query.productName;
+
+        let whereClause: string = `"product"."deletedAt" is null`;
+        if (productName) whereClause = `"product"."name" like '%${productName}%' and "product"."deletedAt" is null`;
+
         return await this.productDetailRepository.find({
-            relations: ["product"]
+            join: {
+                alias: "productDetail",
+                leftJoinAndSelect: {
+                    product: "productDetail.product"
+                }
+            },
+            where: whereClause,
+            take: take,
+            skip: skip
         });
     }
 
     async findOne(id: string): Promise<ProductDetail|undefined> {
         return await this.productDetailRepository.findOne(id, {
-            relations: ["product"]
+            join: {
+                alias: "productDetail",
+                leftJoinAndSelect: {
+                    product: "productDetail.product"
+                }
+            }
         });
     }
 
