@@ -15,7 +15,7 @@ export class TransactionService {
         const endDate = query.endDate;
 
         const whereClause: Record<string, any> = {};
-        if (startDate && endDate) whereClause.date = Between(startDate, endDate);
+        if ((!startDate || startDate !== "undefined") && (!endDate || endDate !== "undefined")) whereClause.date = Between(startDate, endDate);
 
         return await this.transactionRepository.count({
             join: {
@@ -38,7 +38,7 @@ export class TransactionService {
         const endDate = query.endDate;
 
         const whereClause: Record<string, any> = {};
-        if (startDate && endDate) whereClause.date = Between(startDate, endDate);
+        if (startDate !== "undefined" && endDate !== "undefined") whereClause.date = Between(startDate, endDate);
 
         return await this.transactionRepository.find({
             join: {
