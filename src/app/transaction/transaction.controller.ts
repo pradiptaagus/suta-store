@@ -12,7 +12,8 @@ import { DateValidator } from "../../helpers/date-validator.helper";
 import { ResponseBuilder } from "../../helpers/response-builder.helper";
 
 export class TransactionController {
-    private path: string = "/transaction";
+    private path: string = "/api/transaction";
+    private viewPath: string = "/transaction";
     public router: Router;
 
     constructor() {
@@ -27,6 +28,23 @@ export class TransactionController {
         this.router.post(this.path, this.store);
         this.router.put(`${this.path}/:id`, this.update);
         this.router.delete(`${this.path}/:id`, this.delete);
+        this.router.get(this.viewPath, this.index);
+        this.router.get(`${this.viewPath}/new`, this.add);
+        this.router.get(`${this.viewPath}/:id`, this.view);
+    }
+
+    index(req: Request, res: Response) {
+        res.render("transaction/index.ejs");
+    }
+
+    add(req: Request, res: Response) {
+        res.render("transaction/add.ejs");
+    }
+
+    view(req: Request, res: Response) {
+        res.render("transaction/detail.ejs", {
+            id: req.params.id
+        });
     }
 
     /**
@@ -43,8 +61,10 @@ export class TransactionController {
         const endDate = req.query?.endDate+"";
         const dateValidator = new DateValidator();
 
-        if (!dateValidator.validate(startDate) || !dateValidator.validate(endDate)) {
-            return new ResponseBuilder().customResponse(res, false, `Start date and end date value should be date!`);
+        if (startDate !== "undefined" && endDate !== "undefined") {
+            if (!dateValidator.validate(startDate) || !dateValidator.validate(endDate)) {
+                return new ResponseBuilder().customResponse(res, false, `Start date and end date value should be date!`);
+            }
         }
 
         const query: FindAllTransactionDTO = {
