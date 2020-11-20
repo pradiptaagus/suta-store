@@ -33,7 +33,7 @@ export class TransactionService {
 
     async findAll(query: FindAllTransactionDTO): Promise<Transaction[]> {
         const take = query.size ? query.size : 10;
-        const skip = query.page ? (query.page - 1) * take : 1;
+        const skip = query.page ? (query.page - 1) * take : 0;
         const startDate = query.startDate;
         const endDate = query.endDate;
 
