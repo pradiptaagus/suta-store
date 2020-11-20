@@ -36,7 +36,7 @@
             </div>
             <div class="form-group row h1">
                 <div class="col-md-3">Total transaksi</div>
-                <div class="col-md-9" id="totalTransaction">: IDR.0,00</div>
+                <div class="col-md-9">: <span id="transactionTotal">IDR.0,00</span></div>
             </div>
             <button type="submit" class="btn btn-success">Buat transaksi</button>
             <a href="/transaction" class="btn btn-secondary ml-2">Kembali</a>
@@ -49,15 +49,17 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
     <script>
         let productVariantList = [];
+        let selectedProductVariants = [];
+        let transactionTotal = 0;
 
-        $("document").ready(async function() {
-            addProductVariant();
-            await renderProductForm();
+        $("document").ready(function() {
+            addProductVariantList();
+            renderProductForm();
         });
 
-        async function renderProductForm() {
+        function renderProductForm() {
             $("#productVariantList").html("");
-            await productVariantList.forEach((product, index) => {
+            productVariantList.forEach((product, index) => {
                 $("#productVariantList").append(
                     '<div class="border rounded p-3 w-100 mb-3">'+
                         '<div class="form-group row">'+
@@ -68,20 +70,28 @@
                             '</div>'+
                         '</div>'+
                         '<div class="form-group row">'+
+                            '<label class="col-md-3 col-form-label">Harga</label>' +
+                            '<div class="col-md-9">: <span id="productPrice-'+index+'">IDR 0,00</span></div>' +
+                        '</div>' +
+                        '<div class="form-group row">'+
                             '<label for="qty" class="col-md-3 col-form-label">Jumlah pembelian</label>'+
                             '<div class="col-md-9">'+
-                                '<input class="form-control" type="text" name="qty['+index+']" id="qty['+index+']" value="'+product.qty+'" style="width: initial;" value="'+product.qty+'" data-key="qty" data-index="'+index+'" data-numberonly="true" onchange="onChangeProductVariantInput(this)">'+
+                                '<div class="d-flex">'+
+                                    '<div id="decreaseQty" data-index="'+index+'" class="btn btn-primary" style="width: 40px; border-top-right-radius: 0; border-bottom-right-radius: 0">-</div>' +
+                                    '<input class="form-control rounded-0 text-center" type="text" name="qty['+index+']" id="qty['+index+']" value="'+product.qty+'" style="width: 60px;" value="'+product.qty+'" data-key="qty" data-index="'+index+'" data-numberonly="true" onchange="onChangeProductVariantInput(this)" onkeypress="onChangeProductVariantInput(this)">'+
+                                    '<div id="increaseQty" data-index="'+index+'" class="btn btn-primary" style="width: 40px; border-top-left-radius: 0; border-bottom-left-radius: 0">+</div>' +
+                                '</div>' +
                                 '<div class="invalid-feedback" id="qtyError-'+index+'"></div>'+
                             '</div>'+
                         '</div>'+
                         '<div class="form-group row">'+
                             '<label for="discount" class="col-md-3 col-form-label">Diskon (IDR)</label>'+
                             '<div class="col-md-9">'+
-                                '<input class="form-control" type="text" name="discount['+index+']" id="discount['+index+']" value="'+product.discount+'" style="width: initial;" data-key="discount" data-index="'+index+'" data-numberonly="true" onchange="onChangeProductVariantInput(this)">'+
+                                '<input class="form-control" type="text" name="discount['+index+']" id="discount['+index+']" value="'+product.discount+'" style="width: initial;" data-key="discount" data-index="'+index+'" data-numberonly="true" onchange="onChangeProductVariantInput(this)" onkeypress="onChangeProductVariantInput(this)">'+
                                 '<div class="invalid-feedback" id="discountError"></div>'+
                             '</div>'+
                         '</div>'+
-                        '<button id="deleteProductVariantButton" data-index="'+index+'" class="btn btn-danger" type="button">Hapus barang</button>'+
+                        '<button name="deleteProductVariantButton" data-index="'+index+'" class="btn btn-danger" type="button">Hapus barang</button>'+
                     '</div>'
                 );
 
@@ -133,19 +143,37 @@
             });
             initAllowNumberOnly();
             initDeleteProductVariant();
+            quantityHandler();
         }
 
-        function addProductVariant() {
+        function addProductVariantList() {
             productVariantList.push({
                 productVariantId: null,
                 qty: 1,
                 discount: 0
             });
+
+            addSelectedProductVariant();
+        }
+
+        function addSelectedProductVariant() {
+            selectedProductVariants.push({
+                id: null,
+                unit: null,
+                qty: 1,
+                price: 0,
+                storageType: null,
+                product: {
+                    id: null,
+                    code: null,
+                    name: null
+                } 
+            });
         }
 
         function initAddProductVariant() {
             $("#addProductVariantButton").click(function() {
-                addProductVariant();
+                addProductVariantList();
                 renderProductForm();
             });
         }
@@ -157,6 +185,8 @@
             const value = el.val();
             const index = el.data("index");
             productVariantList[index][key] = value;
+
+            calculateTransactionTotal(productVariantList);
         }
 
         function initAllowNumberOnly() {
@@ -176,17 +206,87 @@
             const key = el.data("key");
             const index = el.data("index");
             productVariantList[index][key] = id;
+
+            $.ajax({
+                method: "get",
+                url: "/api/product-detail/" + id,
+                contentType: "application/json",
+                success: function(result) {
+                    selectedProductVariants[index] = result.data;
+
+                    // Show product price on view
+                    $('#productPrice-'+index).text(new Intl.NumberFormat("en-US", {style: "currency", currency: "IDR"}).format(result.data.price));
+
+                    calculateTransactionTotal(productVariantList);
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
         }
 
         function initDeleteProductVariant() {
-            $("#deleteProductVariantButton").click(function() {
-                console.log("masuk")
+            $("button[name=deleteProductVariantButton]").click(function() {
                 const el = $(this);
                 const index = el.data("index");
-                if (productVariantList.length > 1) {
-                    productVariantList.splice(index, 1);
+                productVariantList.splice(index, 1);
+                
+                if (productVariantList.length === 0) {
+                    addProductVariantList();
+                    renderProductForm();
+                } else {
+                    renderProductForm();
                 }
-                renderProductForm();
+            });
+        }
+
+        function calculateTransactionTotal(productVariantList) {
+            let total = 0;
+            for (let i = 0; i < productVariantList.length; i++) {
+                const selectedProductVariant = selectedProductVariants[i];
+                const selectedProductVariantQty = selectedProductVariant.qty;
+                const selectedProductVariantPrice = selectedProductVariant.price;
+                console.log(selectedProductVariantQty, selectedProductVariantPrice);
+
+                const productVariantItem = productVariantList[i];
+                const productVariantItemQty = +productVariantItem.qty;
+                const productVariantItemDiscount = +productVariantItem.discount;
+                console.log(productVariantItemQty, productVariantItemDiscount);
+
+                let subTotal = 0;
+                if (selectedProductVariantPrice) {
+                    subTotal = (selectedProductVariantPrice - productVariantItemDiscount) * productVariantItemQty;
+                }
+                console.log(subTotal)
+                total += subTotal;
+            }
+
+            transactionTotal = total;
+            $("#transactionTotal").text(new Intl.NumberFormat("en-US", {style: "currency", currency: "IDR"}).format(transactionTotal));
+        }
+
+        function quantityHandler() {
+            $("#decreaseQty").click(function() {
+                const index = $(this).data("index");
+                const oldQty = +productVariantList[index].qty;
+                let newQty = oldQty;
+                if (oldQty > 1) {
+                    newQty = oldQty - 1;
+                }
+                $("input[name='qty["+index+"]']").val(newQty);
+                productVariantList[index]["qty"] = newQty;
+
+                calculateTransactionTotal(productVariantList);
+            });
+            
+            $("#increaseQty").click(function() {
+                const index = $(this).data("index");
+                const oldQty = +productVariantList[index].qty;
+                let newQty = oldQty + 1;
+                $("input[name='qty["+index+"]']").val(newQty);
+                productVariantList[index]["qty"] = newQty;
+
+                calculateTransactionTotal(productVariantList);
             });
         }
     </script>
