@@ -36,7 +36,7 @@
             </div>
             <div class="form-group row h1">
                 <div class="col-md-3">Total transaksi</div>
-                <div class="col-md-9">: <span id="transactionTotal">IDR.0,00</span></div>
+                <div class="col-md-9">: <span id="transactionTotal">IDR 0.00</span></div>
             </div>
             <button type="submit" class="btn btn-success">Buat transaksi</button>
             <a href="/transaction" class="btn btn-secondary ml-2">Kembali</a>
@@ -71,15 +71,15 @@
                         '</div>'+
                         '<div class="form-group row">'+
                             '<label class="col-md-3 col-form-label">Harga</label>' +
-                            '<div class="col-md-9">: <span id="productPrice-'+index+'">IDR 0,00</span></div>' +
+                            '<div class="col-md-9">: <span id="productPrice-'+index+'">IDR 0.00</span></div>' +
                         '</div>' +
                         '<div class="form-group row">'+
                             '<label for="qty" class="col-md-3 col-form-label">Jumlah pembelian</label>'+
                             '<div class="col-md-9">'+
                                 '<div class="d-flex">'+
-                                    '<div id="decreaseQty" data-index="'+index+'" class="btn btn-primary" style="width: 40px; border-top-right-radius: 0; border-bottom-right-radius: 0">-</div>' +
+                                    '<div name="decreaseQty" data-index="'+index+'" class="btn btn-primary" style="width: 40px; border-top-right-radius: 0; border-bottom-right-radius: 0">-</div>' +
                                     '<input class="form-control rounded-0 text-center" type="text" name="qty['+index+']" id="qty['+index+']" value="'+product.qty+'" style="width: 60px;" value="'+product.qty+'" data-key="qty" data-index="'+index+'" data-numberonly="true" onchange="onChangeProductVariantInput(this)" onkeypress="onChangeProductVariantInput(this)">'+
-                                    '<div id="increaseQty" data-index="'+index+'" class="btn btn-primary" style="width: 40px; border-top-left-radius: 0; border-bottom-left-radius: 0">+</div>' +
+                                    '<div name="increaseQty" data-index="'+index+'" class="btn btn-primary" style="width: 40px; border-top-left-radius: 0; border-bottom-left-radius: 0">+</div>' +
                                 '</div>' +
                                 '<div class="invalid-feedback" id="qtyError-'+index+'"></div>'+
                             '</div>'+
@@ -91,6 +91,10 @@
                                 '<div class="invalid-feedback" id="discountError"></div>'+
                             '</div>'+
                         '</div>'+
+                        '<div class="form-group row">'+
+                            '<label class="col-md-3 col-form-label">Sub total</label>' +
+                            '<div class="col-md-9">: <span id="subTotal-'+index+'">IDR 0.00</span></div>' +
+                        '</div>' +
                         '<button name="deleteProductVariantButton" data-index="'+index+'" class="btn btn-danger" type="button">Hapus barang</button>'+
                     '</div>'
                 );
@@ -230,7 +234,7 @@
                 const el = $(this);
                 const index = el.data("index");
                 productVariantList.splice(index, 1);
-                
+
                 if (productVariantList.length === 0) {
                     addProductVariantList();
                     renderProductForm();
@@ -257,6 +261,7 @@
                 if (selectedProductVariantPrice) {
                     subTotal = (selectedProductVariantPrice - productVariantItemDiscount) * productVariantItemQty;
                 }
+                $("#subTotal-" + i).text(new Intl.NumberFormat("en-US", {style: "currency", currency: "IDR"}).format(subTotal));
                 console.log(subTotal)
                 total += subTotal;
             }
@@ -266,7 +271,8 @@
         }
 
         function quantityHandler() {
-            $("#decreaseQty").click(function() {
+            $("div[name=decreaseQty]").click(function() {
+                console.log("masuk")
                 const index = $(this).data("index");
                 const oldQty = +productVariantList[index].qty;
                 let newQty = oldQty;
@@ -279,7 +285,8 @@
                 calculateTransactionTotal(productVariantList);
             });
             
-            $("#increaseQty").click(function() {
+            $("div[name=increaseQty]").click(function() {
+                console.log("masuk")
                 const index = $(this).data("index");
                 const oldQty = +productVariantList[index].qty;
                 let newQty = oldQty + 1;
