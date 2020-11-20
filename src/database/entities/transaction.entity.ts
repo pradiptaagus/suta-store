@@ -6,11 +6,14 @@ export class Transaction {
     @PrimaryGeneratedColumn("uuid")
     id!: string;
 
-    @Column({type: "text"})
+    @Column({type: "text", nullable: true})
     note!: string;
 
     @Column({type: "date"})
     date!: string;
+
+    @Column({type: "int", nullable: true})
+    transactionTotal!: number;
 
     @CreateDateColumn()
     createdAt!: Timestamp;
