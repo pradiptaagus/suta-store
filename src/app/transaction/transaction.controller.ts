@@ -213,7 +213,6 @@ export class TransactionController {
 
         // Store transaction
         const transaction = await new TransactionService().store(transactionBody);
-        console.log(transaction)
         if (!transaction) {
             return new ResponseBuilder().internalServerError(res);
         }
@@ -251,14 +250,10 @@ export class TransactionController {
                     : productVariant.price;
 
             // Calculate total price
-            console.log("totalPrice: ", totalPrice)
-            console.log("transactionDetail.qty: ", transactionDetail.qty);
             const subTotal = totalPrice * (+transactionDetail.qty);
-            console.log("subTotal: ", subTotal);
             
             // Add subTotal to transactionTotal
             transactionTotal = transactionTotal + subTotal;
-            console.log("add transactionTotal: ", transactionTotal);
 
             // Create product snapshot DTO (Data Transfer Object)
             const productSnapshotBody: ProductSnapshotDTO = {
@@ -300,12 +295,10 @@ export class TransactionController {
         }
 
         // Update transaction total
-        console.log("transactionTotal: ", transactionTotal);
         const updateBody: UpdateTransctionDTO = {
             transactionTotal: transactionTotal
         }
         const updateTransactionResult = await new TransactionService().update(updateBody, transaction.id);
-        console.log(updateTransactionResult);
 
         const data = await new TransactionService().findOne(transaction.id);
         return new ResponseBuilder().storeResponse(res, true, `transaction`, data);
