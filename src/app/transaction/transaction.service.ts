@@ -52,7 +52,10 @@ export class TransactionService {
             },
             where: whereClause,
             take: take,
-            skip: skip
+            skip: skip,
+            order: {
+                createdAt: "ASC"
+            }
         });
     }
 
