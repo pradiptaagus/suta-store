@@ -250,19 +250,16 @@
                 const selectedProductVariant = selectedProductVariants[i];
                 const selectedProductVariantQty = selectedProductVariant.qty;
                 const selectedProductVariantPrice = selectedProductVariant.price;
-                console.log(selectedProductVariantQty, selectedProductVariantPrice);
 
                 const productVariantItem = productVariantList[i];
                 const productVariantItemQty = +productVariantItem.qty;
                 const productVariantItemDiscount = +productVariantItem.discount;
-                console.log(productVariantItemQty, productVariantItemDiscount);
 
                 let subTotal = 0;
                 if (selectedProductVariantPrice) {
                     subTotal = (selectedProductVariantPrice - productVariantItemDiscount) * productVariantItemQty;
                 }
                 $("#subTotal-" + i).text(new Intl.NumberFormat("en-US", {style: "currency", currency: "IDR"}).format(subTotal));
-                console.log(subTotal)
                 total += subTotal;
             }
 
@@ -272,7 +269,6 @@
 
         function quantityHandler() {
             $("div[name=decreaseQty]").click(function() {
-                console.log("masuk")
                 const index = $(this).data("index");
                 const oldQty = +productVariantList[index].qty;
                 let newQty = oldQty;
@@ -286,7 +282,6 @@
             });
             
             $("div[name=increaseQty]").click(function() {
-                console.log("masuk")
                 const index = $(this).data("index");
                 const oldQty = +productVariantList[index].qty;
                 let newQty = oldQty + 1;
@@ -310,12 +305,12 @@
                         transactionDetails: productVariantList
                     },
                     success: function(result) {
-                        console.log(result);
                         $("input").removeClass("is-invalid");
                         $("select").removeClass("is-invalid");
                         $("div").removeClass("is-invalid");
                         $(".invalid-feedback").text("");
                         alert("Transaksi berhasil");
+                        window.location.href = "/transaction";
                     },
                     error: function(error) {
                         alert("Transaksi gagal!");
@@ -338,7 +333,6 @@
                         }
 
                         productVariantList.forEach((productVariant, index) => {
-                            console.log(index)
                             if (errors.hasOwnProperty("transactionDetails["+index+"].productVariantId")) {
                                 const msg = errors["transactionDetails["+index+"].productVariantId"];
                                 $("#productVariantError-" + index).text(msg);
