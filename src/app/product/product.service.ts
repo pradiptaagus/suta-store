@@ -47,7 +47,10 @@ export class ProductService {
             },
             where: whereClause,
             take: take,
-            skip: skip
+            skip: skip,
+            order: {
+                createdAt: "ASC"
+            }
         });
     }
 
