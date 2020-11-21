@@ -32,6 +32,7 @@ export class ProductSnapshotService {
             productSnapshot.price = body.price;
             productSnapshot.discount = body.discount;
             productSnapshot.totalPrice = body.totalPrice;
+            productSnapshot.subTotal = body.subTotal;
             const result = await this.productSnapshotRepository.save(productSnapshot);
             return result;
         }
@@ -50,6 +51,7 @@ export class ProductSnapshotService {
             productSnapshot.price = body.price;
             productSnapshot.discount = body.discount;
             productSnapshot.totalPrice = body.totalPrice;
+            productSnapshot.subTotal = body.subTotal;
             const result = await this.productSnapshotRepository.save(productSnapshot);
             return result;
         }
