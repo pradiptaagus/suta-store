@@ -87,9 +87,7 @@ export class TransactionService {
     }
 
     async update(body: UpdateTransctionDTO, id: string): Promise<Transaction|false> {
-        console.log("masuk update");
-        const transaction = await this.transactionRepository.findOne(id);        
-        console.log("transaksi yg diupdate: ", transaction);
+        const transaction = await this.transactionRepository.findOne(id);
         if (!transaction) return false;
 
         transaction.note = body.note + "";        
