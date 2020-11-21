@@ -9,7 +9,7 @@ import { DashboardController } from "./app/dashboard/dashboard.controller";
 
 dotenv.config();
 const defaultPort: number = 1200;
-const port = process.env.APP_PORT ? process.env.APP_PORT : defaultPort;
+const port = process.env.PORT ? process.env.PORT : defaultPort;
 
 createConnection().then(() => {
     const app = new App([
