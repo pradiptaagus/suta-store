@@ -72,20 +72,39 @@ export class TransactionService {
 
     async store(body: StoreTransactionDTO): Promise<Transaction> {
         const transaction = new Transaction();
-        transaction.note = body.note + "";
-        transaction.date = body.date;
+        transaction.note = body.note + "";        
+        if (!transaction.date || transaction.date === undefined) {
+            const current = new Date();
+            const year = current.getFullYear();
+            const month = current.getMonth();
+            const date = current.getDate();
+            const fullDate = `${year}-${month}-${date}`;
+            transaction.date = fullDate;
+        }
+        transaction.transactionTotal = body.transactionTotal ? body.transactionTotal : 0;
         const result = await this.transactionRepository.save(transaction);
         return result;
     }
 
-    async update(body: UpdateTransctionDTO, id: string): Promise<Transaction|undefined> {
-        const transaction = await this.transactionRepository.findOne();        
-        if (transaction) {
-            transaction.note = body.note + "";
-            transaction.date = body.date;
-            const result = await this.transactionRepository.save(transaction);
-            return result;
+    async update(body: UpdateTransctionDTO, id: string): Promise<Transaction|false> {
+        console.log("masuk update");
+        const transaction = await this.transactionRepository.findOne(id);        
+        console.log("transaksi yg diupdate: ", transaction);
+        if (!transaction) return false;
+
+        transaction.note = body.note + "";        
+        if (!transaction.date || transaction.date === undefined) {
+            const current = new Date();
+            const year = current.getFullYear();
+            const month = current.getMonth();
+            const date = current.getDate();
+            const fullDate = `${year}-${month}-${date}`;
+            transaction.date = fullDate;
         }
+        transaction.transactionTotal = body.transactionTotal ? body.transactionTotal : 0;
+        const result = await this.transactionRepository.save(transaction);
+        return result;
+        
     }
 
     async delete(id: string): Promise<true|undefined> {
