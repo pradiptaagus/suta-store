@@ -76,9 +76,9 @@
                         '<div class="form-group row">'+
                             '<label for="qty" class="col-md-3 col-form-label">Jumlah pembelian</label>'+
                             '<div class="col-md-9">'+
-                                '<div class="d-flex">'+
+                                '<div class="d-flex" id="qtyContainer-'+index+'">'+
                                     '<div name="decreaseQty" data-index="'+index+'" class="btn btn-primary" style="width: 40px; border-top-right-radius: 0; border-bottom-right-radius: 0">-</div>' +
-                                    '<input class="form-control rounded-0 text-center" type="text" name="qty['+index+']" id="qty['+index+']" value="'+product.qty+'" style="width: 60px;" value="'+product.qty+'" data-key="qty" data-index="'+index+'" data-numberonly="true" onchange="onChangeProductVariantInput(this)" onkeypress="onChangeProductVariantInput(this)">'+
+                                    '<input class="form-control rounded-0 text-center" type="text" name="qty['+index+']" id="qty['+index+']" value="'+product.qty+'" style="width: 60px;" value="'+product.qty+'" data-key="qty" data-index="'+index+'" data-numberonly="true" onkeyup="onChangeProductVariantInput(this)">'+
                                     '<div name="increaseQty" data-index="'+index+'" class="btn btn-primary" style="width: 40px; border-top-left-radius: 0; border-bottom-left-radius: 0">+</div>' +
                                 '</div>' +
                                 '<div class="invalid-feedback" id="qtyError-'+index+'"></div>'+
@@ -87,7 +87,7 @@
                         '<div class="form-group row">'+
                             '<label for="discount" class="col-md-3 col-form-label">Diskon (IDR)</label>'+
                             '<div class="col-md-9">'+
-                                '<input class="form-control" type="text" name="discount['+index+']" id="discount['+index+']" value="'+product.discount+'" style="width: initial;" data-key="discount" data-index="'+index+'" data-numberonly="true" onchange="onChangeProductVariantInput(this)" onkeypress="onChangeProductVariantInput(this)">'+
+                                '<input class="form-control" type="text" name="discount['+index+']" id="discount['+index+']" value="'+product.discount+'" style="width: initial;" data-key="discount" data-index="'+index+'" data-numberonly="true" onkeyup="onChangeProductVariantInput(this)">'+
                                 '<div class="invalid-feedback" id="discountError"></div>'+
                             '</div>'+
                         '</div>'+
@@ -296,6 +296,78 @@
                 calculateTransactionTotal(productVariantList);
             });
         }
+
+        function initSave() {
+            $("form").submit(function(e) {
+                e.preventDefault();
+
+                $.ajax({
+                    method: "post",
+                    url: "/api/transaction",
+                    data: {
+                        date: $("#date").val(),
+                        note: $("#note").val(),
+                        transactionDetails: productVariantList
+                    },
+                    success: function(result) {
+                        console.log(result);
+                        $("input").removeClass("is-invalid");
+                        $("select").removeClass("is-invalid");
+                        $("div").removeClass("is-invalid");
+                        $(".invalid-feedback").text("");
+                        alert("Transaksi berhasil");
+                    },
+                    error: function(error) {
+                        alert("Transaksi gagal!");
+                        const errors = error.responseJSON.errors;
+                        
+                        if (errors.hasOwnProperty("date")) {
+                            const msg = errors.date;
+                            $("#dateError").text(msg);
+                            $("#date").addClass("is-invalid");
+                        } else {
+                            $("#date").removeClass("is-invalid");
+                        }
+
+                        if (errors.hasOwnProperty("note")) {
+                            const msg = errors.date;
+                            $("#noteError").text(msg);
+                            $("#note").addClass("is-invalid");
+                        } else {
+                            $("#note").removeClass("is-invalid");
+                        }
+
+                        productVariantList.forEach((productVariant, index) => {
+                            console.log(index)
+                            if (errors.hasOwnProperty("transactionDetails["+index+"].productVariantId")) {
+                                const msg = errors["transactionDetails["+index+"].productVariantId"];
+                                $("#productVariantError-" + index).text(msg);
+                                $("select[name='productVariant["+index+"]']").addClass("is-invalid");
+                            } else {
+                                $("select[name='productVariant["+index+"]']").removeClass("is-invalid");
+                            }
+
+                            if (errors.hasOwnProperty("transactionDetails["+index+"].qty")) {
+                                const msg = errors["transactionDetails["+index+"].qty"];
+                                $("#qtyError-" + index).text(msg);
+                                $("#qtyContainer-" + index).addClass("is-invalid");
+                            } else {
+                                $("#qtyContainer-" + index).removeClass("is-invalid");
+                            }
+
+                            if (errors.hasOwnProperty("transactionDetails["+index+"].discount")) {
+                                const msg = errors["transactionDetails["+index+"].discount"];
+                                $("#discountError-" + index).text(msg);
+                                $("input[name='discount["+index+"]']").addClass("is-invalid");
+                            } else {
+                                $("input[name='discount["+index+"]']").removeClass("is-invalid");
+                            }
+                        });
+                    }
+                });
+            })
+        }
+        initSave();
     </script>
 </body>
 </html>
