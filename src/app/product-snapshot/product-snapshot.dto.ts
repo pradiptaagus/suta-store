@@ -7,6 +7,7 @@ export interface ProductSnapshotDTO {
     price: number;
     discount: number;
     totalPrice: number;
+    subTotal: number;
 }
 
 export interface StoreProductSnapshotDTO extends ProductSnapshotDTO {}
