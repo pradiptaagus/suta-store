@@ -31,6 +31,9 @@ export class ProductSnapshot {
     @Column({type: "int"})
     totalPrice!: number;
 
+    @Column({type: "int", nullable: true})
+    subTotal!: number;
+
     @CreateDateColumn()
     createdAt!: Timestamp;
 
