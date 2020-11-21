@@ -117,12 +117,12 @@ export class TransactionController {
     async store(req: Request, res: Response, next: NextFunction) {
         // Request body mapping
         const body: {
-            date?: string,
-            note?: string,
+            date: string,
+            note: string,
             transactionDetails: {
                 productVariantId: string,
                 qty: number,
-                discount?: number|string
+                discount: number|string
             }[]
         } = req.body;
 
@@ -161,20 +161,6 @@ export class TransactionController {
         await check("transactionDetails.*.qty")
             .notEmpty().bail().withMessage("Product quantity field is required!")
             .isNumeric({no_symbols: true}).bail().withMessage("Product quantity field value should be number!")
-            .custom(async(value: number) => {
-                /**
-                 * Validate quantity.
-                 * If quantity exceed the available product quantity, it will return error
-                 */
-                const productVariant = await new ProductDetailService().findOne(body.transactionDetails[0].productVariantId);
-                if (!productVariant) {
-                    return Promise.reject(`Could't identify the amount of stock!`);
-                }
-                if (value > productVariant.qty) {
-                    return Promise.reject(`Product quantity requested is exceed the limit!`);
-                }
-                return true;
-            })
             .run(req);
         await check("transactionDetails.*.discount")
             .custom(value => {
@@ -209,7 +195,7 @@ export class TransactionController {
                 transactionDetailErrors[`transactionDetails[${i}].productVariantId`] = "Product variant not found!";
             }
             // Check product variant stock
-            else if (!(productVariant.qty > transactionDetail.qty)) {
+            else if (transactionDetail.qty > productVariant.qty) {
                 transactionDetailErrors[`transactionDetails[${i}].qty`] = "Product quantity requested is exceed the limit!";
             }
         }
@@ -217,33 +203,23 @@ export class TransactionController {
         if (Object.keys(transactionDetailErrors).length > 0) {
             return new ResponseBuilder().storeResponse(res, false, `transaction`, transactionDetailErrors);
         }
-        
-        /**
-         * Determine if request body has date value.
-         * If doesn't exist, it will be automatically generated.
-         */
-        if (!body.date || body.date === undefined) {
-            const current = new Date();
-            const year = current.getFullYear();
-            const month = current.getMonth();
-            const date = current.getDate();
-            const fullDate = `${year}-${month}-${date}`;
-            body.date = fullDate;
-        }
 
         // Create store transaction DTO (Data Transfer Object)
         const transactionBody: StoreTransactionDTO = {
             note: body.note,
-            date: body.date
+            date: body.date,
+            transactionTotal: 0
         }
 
         // Store transaction
         const transaction = await new TransactionService().store(transactionBody);
+        console.log(transaction)
         if (!transaction) {
             return new ResponseBuilder().internalServerError(res);
         }
 
         // Loop for create new product snapshot and transaction detail
+        let transactionTotal: number = 0;
         for (let i = 0; i < transactionDetails.length; i++) {
             // Get transaction detail item [i] from transactionDetails array
             const transactionDetail = transactionDetails[i];
@@ -266,13 +242,23 @@ export class TransactionController {
             }
 
             /**
-             * Generate total price based on product variant price and transaction detail discount.
-             * If discount exist, the price will be calculated with formula => (price - discount) * quantity.
-             * Otherwise, the price will be calculated with formula => price * quantity.
+             * Calculate total price based on product variant price and transaction detail discount.
+             * If discount exist, the price will be calculated with formula => (price - discount).
+             * Otherwise, the price will be same as product variant price
              */
             const totalPrice = discount ? 
                 productVariant.price - discount 
                     : productVariant.price;
+
+            // Calculate total price
+            console.log("totalPrice: ", totalPrice)
+            console.log("transactionDetail.qty: ", transactionDetail.qty);
+            const subTotal = totalPrice * (+transactionDetail.qty);
+            console.log("subTotal: ", subTotal);
+            
+            // Add subTotal to transactionTotal
+            transactionTotal = transactionTotal + subTotal;
+            console.log("add transactionTotal: ", transactionTotal);
 
             // Create product snapshot DTO (Data Transfer Object)
             const productSnapshotBody: ProductSnapshotDTO = {
@@ -283,7 +269,8 @@ export class TransactionController {
                 qty: +transactionDetail.qty,
                 price: productVariant.price,
                 discount: discount,
-                totalPrice: totalPrice
+                totalPrice: totalPrice,
+                subTotal: subTotal
             }
 
             // Store product snapshot
@@ -311,6 +298,14 @@ export class TransactionController {
                 return new ResponseBuilder().internalServerError(res);
             }
         }
+
+        // Update transaction total
+        console.log("transactionTotal: ", transactionTotal);
+        const updateBody: UpdateTransctionDTO = {
+            transactionTotal: transactionTotal
+        }
+        const updateTransactionResult = await new TransactionService().update(updateBody, transaction.id);
+        console.log(updateTransactionResult);
 
         const data = await new TransactionService().findOne(transaction.id);
         return new ResponseBuilder().storeResponse(res, true, `transaction`, data);
@@ -425,24 +420,12 @@ export class TransactionController {
         if (Object.keys(transactionDetailErrors).length > 0) {
             return new ResponseBuilder().updateResponse(res, false, `transaction`, transactionDetailErrors);
         }
-        
-        /**
-         * Determine if request body has date value.
-         * If doesn't exist, it will be automatically generated.
-         */
-        if (!body.date || body.date === undefined) {
-            const current = new Date();
-            const year = current.getFullYear();
-            const month = current.getMonth();
-            const date = current.getDate();
-            const fullDate = `${year}-${month}-${date}`;
-            body.date = fullDate;
-        }
 
         // Create update transaction DTO (Data Transfer Object)
         const transactionBody: UpdateTransctionDTO = {
             note: body.note,
             date: body.date,
+            transactionTotal: 0,
         }
 
         // Update transaction
@@ -455,6 +438,7 @@ export class TransactionController {
          * Loop transactionDetails array 
          * to update transaction detail and product snapshot
          */        
+        let transactionTotal: number = 0;
         for (let i = 0; i < transactionDetails.length; i++) {
             // Get transaction detail item [i] from transactionDetails array
             const transactionDetail = transactionDetails[i];
@@ -484,11 +468,17 @@ export class TransactionController {
             /**
              * Generate total price based on product variant price and discount.
              * If discount exist, the price will be calculated with formula => (price - discount) * quantity.
-             * Otherwise, the price will be calculated with formula => price * quantity.
+             * Otherwise, the price will be same as product variant price
              */
             const totalPrice = discount 
-                ? ((productVariant.price - discount) * transactionDetail.productSnapshot.qty)
-                    : productVariant.price * transactionDetail.productSnapshot.qty;
+                ? productVariant.price - discount
+                    : productVariant.price
+
+            // Calculate total price
+            const subTotal = totalPrice * transactionDetail.productSnapshot.qty;
+            
+            // Add subTotal to transactionTotal
+            transactionTotal = transactionTotal + totalPrice;
 
             // Create product snapshot DTO (Data Transfer Object)
             const productSnapshotBody: ProductSnapshotDTO = {
@@ -499,7 +489,8 @@ export class TransactionController {
                 qty: +transactionDetail.productSnapshot.qty,
                 price: productVariant.price,
                 discount: discount,
-                totalPrice: totalPrice
+                totalPrice: totalPrice,
+                subTotal: subTotal
             }
 
             /**
@@ -557,6 +548,12 @@ export class TransactionController {
                 }                
             }
         }
+
+        // Update transaction total
+        const updateBody: UpdateTransctionDTO = {
+            transactionTotal: transactionTotal
+        }
+        await new TransactionService().update(updateBody, transaction.id);
 
         const data = await new TransactionService().findOne(id)
         return new ResponseBuilder().updateResponse(res, false, `transaction`, data);
