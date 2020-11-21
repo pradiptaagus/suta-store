@@ -72,7 +72,7 @@ export class TransactionService {
 
     async store(body: StoreTransactionDTO): Promise<Transaction> {
         const transaction = new Transaction();
-        transaction.note = body.note + "";        
+        transaction.note = body.note ? body.note : "";        
         if (!transaction.date || transaction.date === undefined) {
             const current = new Date();
             const year = current.getFullYear();
@@ -90,7 +90,7 @@ export class TransactionService {
         const transaction = await this.transactionRepository.findOne(id);
         if (!transaction) return false;
 
-        transaction.note = body.note + "";        
+        if (body.note) transaction.note = body.note;        
         if (!transaction.date || transaction.date === undefined) {
             const current = new Date();
             const year = current.getFullYear();
