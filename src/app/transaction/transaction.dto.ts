@@ -12,10 +12,12 @@ export interface CountTransactionDTO {
 
 export interface StoreTransactionDTO {
     date: string;
-    note?: string;
+    note: string;
+    transactionTotal: number;
 }
 
 export interface UpdateTransctionDTO {
-    date: string;
+    date?: string;
     note?: string;
+    transactionTotal: number;
 }
