@@ -62,12 +62,13 @@
         });
 
         function fetchData(args) {
-            $("#table-content").html("<tr><td colspan='4' class='text-center'>Memuat...</td></tr>")
             let queries = [];
             if (args.size) queries.push("size=" + args.size);
             if (args.page) queries.push("page=" + args.page);
             if (args.startDate) queries.push("startDate=" + args.startDate);
             if (args.endDate) queries.push("endDate=" + args.endDate);
+
+            renderLoadingStatus("Memuat...");
 
             $.ajax({
                 method: "get",
@@ -103,7 +104,7 @@
                             '<td>' + (index + 1 + ((paginationData.page - 1 )* paginationData.size)) + '</td>' +
                             '<td>' + transaction.date + '</td>' +
                             '<td>' + (new Intl.NumberFormat('en-US', {style: "currency", currency: "IDR"}).format(totalTransaction)) + '</td>' +
-                            '<td>' + transaction.note + '</td>' +
+                            '<td>' + (transaction.note && transaction.note !== "undefined" && transaction.note !== null ? transaction.note : "-") + '</td>' +
                             '<td>'+
                                 '<a href="/transaction/' + transaction.id + '" class="btn btn-success btn-sm">Detail</a>' +
                             '</td>' +
@@ -121,7 +122,8 @@
                 itemsOnPage: args.size,
                 currentPage: args.page,
                 onPageClick: function(pageNumber, event) {
-                    fetchData(10, pageNumber);
+                    queryUrl.page = pageNumber;
+                    fetchData(queryUrl);
                 }
             });
 
