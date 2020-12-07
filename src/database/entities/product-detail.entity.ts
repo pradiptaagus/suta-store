@@ -12,7 +12,7 @@ export class ProductDetail {
     @PrimaryGeneratedColumn("uuid")
     id!: string;
 
-    @ManyToOne(type => Product, product => product.productVariant)
+    @ManyToOne(() => Product, product => product.productVariant)
     product!: Product;
 
     @Column({type: "varchar", length: 20})
@@ -36,6 +36,6 @@ export class ProductDetail {
     @DeleteDateColumn()
     deletedAt!: string;
 
-    @OneToMany(type => ProductSnapshot, productSnapshot => productSnapshot.productVariant)
+    @OneToMany(() => ProductSnapshot, productSnapshot => productSnapshot.productVariant)
     productSnapshot!: ProductSnapshot;
 }
