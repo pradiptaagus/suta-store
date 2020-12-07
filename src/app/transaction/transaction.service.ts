@@ -21,8 +21,7 @@ export class TransactionService {
             join: {
                 alias: "transaction",
                 leftJoin: {
-                    transactionDetail: "transaction.transactionDetail",
-                    productSnapshot: "transactionDetail.productSnapshot",
+                    productSnapshot: "transaction.productSnapshot",
                     productVariant: "productSnapshot.productVariant",
                     product: "productVariant.product"
                 }
@@ -44,8 +43,7 @@ export class TransactionService {
             join: {
                 alias: "transaction",
                 leftJoinAndSelect: {
-                    transactionDetail: "transaction.transactionDetail",
-                    productSnapshot: "transactionDetail.productSnapshot",
+                    productSnapshot: "transaction.productSnapshot",
                     productVariant: "productSnapshot.productVariant",
                     product: "productVariant.product"
                 }
@@ -64,8 +62,7 @@ export class TransactionService {
             join: {
                 alias: "transaction",
                 leftJoinAndSelect: {
-                    transactionDetail: "transaction.transactionDetail",
-                    productSnapshot: "transactionDetail.productSnapshot",
+                    productSnapshot: "transaction.productSnapshot",
                     productVariant: "productSnapshot.productVariant",
                     product: "productVariant.product"
                 }
