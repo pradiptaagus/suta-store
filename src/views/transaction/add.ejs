@@ -53,9 +53,20 @@
         let transactionTotal = 0;
 
         $("document").ready(function() {
+            $("#date").val(new Date())
             addProductVariantList();
             renderProductForm();
+            setDefaultDate();
         });
+
+        function setDefaultDate() {
+            const current = new Date();
+            const currentDate = 
+                current.getFullYear() + "-" + 
+                current.getMonth() + "-" + 
+                (current.getDate() < 10 ? "0" + current.getDate() : current.getDate());
+            $("#date").val(currentDate);
+        }
 
         function renderProductForm() {
             $("#productVariantList").html("");
