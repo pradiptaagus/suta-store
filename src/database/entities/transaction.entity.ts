@@ -1,5 +1,5 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Timestamp, UpdateDateColumn } from "typeorm";
-import { TransactionDetail } from "./transaction-detail.entity";
+import { ProductSnapshot } from "./product-snapshot.entity";
 
 @Entity({name: "transactions"})
 export class Transaction {
@@ -21,9 +21,9 @@ export class Transaction {
     @UpdateDateColumn()
     updatedAt!: Timestamp;
 
-    @OneToMany(type => TransactionDetail, trxDetail => trxDetail.transaction)
-    transactionDetail!: TransactionDetail;
-
     @DeleteDateColumn()
     deletedAt!: Timestamp;
+
+    @OneToMany(() => ProductSnapshot, productSnapshot => productSnapshot.transaction)
+    productSnapshot!: ProductSnapshot;
 }
