@@ -21,6 +21,6 @@ export class Product {
     @DeleteDateColumn()
     deletedAt!: string;
 
-    @OneToMany(type => ProductDetail, productDetail => productDetail.product)
+    @OneToMany(() => ProductDetail, productDetail => productDetail.product)
     productVariant!: ProductDetail;
 }
