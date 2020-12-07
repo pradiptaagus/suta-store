@@ -93,17 +93,12 @@
             if (transactions.length > 0) {
                 transactions.forEach((transaction, index) => {
                     const transactionDetail = transaction.transactionDetail;
-                    let totalTransaction = 0;
-                    transactionDetail.forEach(transactionDetail => {
-                        const productSnapshot = transactionDetail.productSnapshot;
-                        totalTransaction += productSnapshot.totalPrice;
-                    });
                     
                     el.append(
                         '<tr>' +
                             '<td>' + (index + 1 + ((paginationData.page - 1 )* paginationData.size)) + '</td>' +
                             '<td>' + transaction.date + '</td>' +
-                            '<td>' + (new Intl.NumberFormat('en-US', {style: "currency", currency: "IDR"}).format(totalTransaction)) + '</td>' +
+                            '<td>' + (new Intl.NumberFormat('en-US', {style: "currency", currency: "IDR"}).format(transaction.transactionTotal)) + '</td>' +
                             '<td>' + (transaction.note && transaction.note !== "undefined" && transaction.note !== null ? transaction.note : "-") + '</td>' +
                             '<td>'+
                                 '<a href="/transaction/' + transaction.id + '" class="btn btn-success btn-sm">Detail</a>' +
@@ -146,7 +141,7 @@
         function renderLoadingStatus(status) {
             $("#table-content").html(
                 '<tr>' +
-                    '<td colspan="4" class="text-center">' + status + '</td>' + 
+                    '<td colspan="5" class="text-center">' + status + '</td>' + 
                 '</tr>'
             );
         }
