@@ -1,8 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { TransactionService } from "./transaction.service";
 import { check, validationResult } from "express-validator";
-import { TransactionDetailDTO } from "../transaction-detail/transaction-detail.dto";
-import { TransactionDetailService } from "../transaction-detail/transaction-detail.service";
 import { ProductSnapshotDTO } from "../product-snapshot/product-snapshot.dto";
 import { ProductSnapshotService } from "../product-snapshot/product-snapshot.service";
 import validator from "validator";
@@ -258,6 +256,7 @@ export class TransactionController {
             // Create product snapshot DTO (Data Transfer Object)
             const productSnapshotBody: ProductSnapshotDTO = {
                 productVariantId: productVariant.id,
+                transactionId: transaction.id,
                 code: productVariant.product.code,
                 name: productVariant.product.name,
                 unit: productVariant.unit,
@@ -278,18 +277,6 @@ export class TransactionController {
             const newQuantity = productVariant.qty - transactionDetail.qty;
             const reduceProductVariantStockResult = new ProductDetailService().updateStock(newQuantity, productVariant.id);
             if (!reduceProductVariantStockResult) {
-                return new ResponseBuilder().internalServerError(res);
-            }
-
-            // Create transaction detail DTO (Data Transfer Object)
-            let transactionDetailBody: TransactionDetailDTO = {
-                transactionId: transaction.id,
-                productSnapshotId: productSnapshot.id
-            };
-
-            // Store transaction detail
-            const storeTransactionDetailResult = await new TransactionDetailService().store(transactionDetailBody);
-            if (!storeTransactionDetailResult) {
                 return new ResponseBuilder().internalServerError(res);
             }
         }
@@ -476,6 +463,7 @@ export class TransactionController {
             // Create product snapshot DTO (Data Transfer Object)
             const productSnapshotBody: ProductSnapshotDTO = {
                 productVariantId: productVariant.id,
+                transactionId: transaction.id,
                 code: productVariant.product.code,
                 name: productVariant.product.name,
                 unit: productVariant.unit,
@@ -526,19 +514,7 @@ export class TransactionController {
                 const reduceProductVariantStockResult = new ProductDetailService().updateStock(newQuantity, productVariant.id);
                 if (!reduceProductVariantStockResult) {
                     return new ResponseBuilder().internalServerError(res);
-                }
-
-                // Create transaction detail DTO (Data Transfer Object)
-                const transactionDetailBody: TransactionDetailDTO = {
-                    transactionId: id,
-                    productSnapshotId: productSnapshot.id
-                };
-
-                // Store transaction detail
-                const storeTransactionDetailResult = await new TransactionDetailService().store(transactionDetailBody);
-                if (!storeTransactionDetailResult) {
-                    return new ResponseBuilder().internalServerError(res);
-                }                
+                }               
             }
         }
 
