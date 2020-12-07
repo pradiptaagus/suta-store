@@ -1,5 +1,6 @@
 export interface ProductSnapshotDTO {
     productVariantId: string;
+    transactionId: string;
     code: string;
     name: string;
     unit: string;
