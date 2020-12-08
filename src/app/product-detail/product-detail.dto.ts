@@ -1,11 +1,11 @@
 export interface FindAllProductDetailDto {
     size?: number;
     page?: number;
-    productName?: string;
+    search?: string;
 }
 
 export interface CountProductDetailDto {
-    productName?: string;
+    search?: string;
 }
 
 export interface StoreProductDetailDTO {
