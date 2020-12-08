@@ -18,6 +18,13 @@
             </div>
         </div>
         <div class="row mb-3">
+            <div class="col-12 col-md-3 font-weight-bold">Total transaksi</div>
+            <div class="col-9">
+                <span class="d-none d-md-inline-block">:</span>
+                <span id="transactionTotal"></span>
+            </div>
+        </div>
+        <div class="row mb-3">
             <div class="col-12 col-md-3 font-weight-bold">Catatan</div>
             <div class="col-9">
                 <span class="d-none d-md-inline-block">:</span>
@@ -75,8 +82,15 @@
                     console.log(result);
                     const data = result.data;
                     $("#date").text(data.date);
+                    $("#transactionTotal").text(
+                        new Intl.NumberFormat("en-US", {
+                            style: "currency",
+                            currency: "IDR"
+                        }).format(data.transactionTotal)
+                    );
                     $("#note").text(data.note);
-                    renderTransactionDetail(data.transactionDetail);
+                    console.log(data.productSnapshot)
+                    renderTransactionDetail(data.productSnapshot);
                 },
                 error: function(error) {
                     console.log(error);
@@ -84,36 +98,42 @@
             });
         }
 
-        function renderTransactionDetail(transactionDetails) {
+        function renderTransactionDetail(productSnapshots) {
             const el = $("#transactionDetails");
             el.html("");
-            transactionDetails.forEach(transactionDetail => {
-                if (!transactionDetail.deletedAt) {
+            productSnapshots.forEach(productSnapshot => {
+                if (!productSnapshot.deletedAt) {
                     el.append(
                         '<div class="border rounded p-3 w-100 mb-3">' +
                             '<div class="row mb-3">' +
-                                '<div class="col-md-2 font-weight-bold">Kode barang</div>' +
-                                '<div class="col-md-10"><span class="d-none d-md-inline-block">:</span> '+transactionDetail.productSnapshot.code+'</div>' +
+                                '<div class="col-md-3 font-weight-bold">Kode barang</div>' +
+                                '<div class="col-md-9"><span class="d-none d-md-inline-block">:</span> '+productSnapshot.code+'</div>' +
                             '</div>' +
                             '<div class="row mb-3">' +
-                                '<div class="col-md-2 font-weight-bold">Nama barang</div>' +
-                                '<div class="col-md-10"><span class="d-none d-md-inline-block">:</span> '+transactionDetail.productSnapshot.name+'</div>' +
+                                '<div class="col-md-3 font-weight-bold">Nama barang</div>' +
+                                '<div class="col-md-9"><span class="d-none d-md-inline-block">:</span> '+productSnapshot.name+'</div>' +
                             '</div>' +
                             '<div class="row mb-3">' +
-                                '<div class="col-md-2 font-weight-bold">Jumlah</div>' +
-                                '<div class="col-md-10"><span class="d-none d-md-inline-block">:</span> '+transactionDetail.productSnapshot.qty+' '+transactionDetail.productSnapshot.unit+'</div>' +
+                                '<div class="col-md-3 font-weight-bold">Lokasi penyimpanan</div>' +
+                                '<div class="col-md-9"><span class="d-none d-md-inline-block">:</span> '+
+                                    (productSnapshot.productVariant.storageType === "store" ? "Toko" : "Gudang") +
+                                '</div>' +
                             '</div>' +
                             '<div class="row mb-3">' +
-                                '<div class="col-md-2 font-weight-bold">Harga awal</div>' +
-                                '<div class="col-md-10"><span class="d-none d-md-inline-block">:</span> '+(new Intl.NumberFormat("en-US", {style: "currency", currency: "IDR"}).format(transactionDetail.productSnapshot.price))+'</div>' +
+                                '<div class="col-md-3 font-weight-bold">Jumlah</div>' +
+                                '<div class="col-md-9"><span class="d-none d-md-inline-block">:</span> '+productSnapshot.qty+' '+productSnapshot.unit+'</div>' +
                             '</div>' +
                             '<div class="row mb-3">' +
-                                '<div class="col-md-2 font-weight-bold">Diskon</div>' +
-                                '<div class="col-md-10"><span class="d-none d-md-inline-block">:</span> '+(new Intl.NumberFormat("en-US", {style: "currency", currency: "IDR"}).format(transactionDetail.productSnapshot.discount))+'</div>' +
+                                '<div class="col-md-3 font-weight-bold">Harga awal</div>' +
+                                '<div class="col-md-9"><span class="d-none d-md-inline-block">:</span> '+(new Intl.NumberFormat("en-US", {style: "currency", currency: "IDR"}).format(productSnapshot.price))+'</div>' +
+                            '</div>' +
+                            '<div class="row mb-3">' +
+                                '<div class="col-md-3 font-weight-bold">Diskon</div>' +
+                                '<div class="col-md-9"><span class="d-none d-md-inline-block">:</span> '+(new Intl.NumberFormat("en-US", {style: "currency", currency: "IDR"}).format(productSnapshot.discount))+'</div>' +
                             '</div>' +
                             '<div class="row">' +
-                                '<div class="col-md-2 font-weight-bold">Sub total</div>' +
-                                '<div class="col-md-10"><span class="d-none d-md-inline-block">:</span> '+(new Intl.NumberFormat("en-US", {style: "currency", currency: "IDR"}).format(transactionDetail.productSnapshot.totalPrice))+'</div>' +
+                                '<div class="col-md-3 font-weight-bold">Sub total</div>' +
+                                '<div class="col-md-9"><span class="d-none d-md-inline-block">:</span> '+(new Intl.NumberFormat("en-US", {style: "currency", currency: "IDR"}).format(productSnapshot.totalPrice))+'</div>' +
                             '</div>' +
                         '</div>'
                     );
