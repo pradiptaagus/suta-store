@@ -198,7 +198,6 @@ export class TransactionController {
 
         // Check transaction details body
         const productSnapshotErrors: any = {};
-        console.log(productSnapshots);
         for (let i = 0; i < productSnapshots.length; i++) {
             const transactionDetail = productSnapshots[i];
             const productVariant = await new ProductDetailService().findOne(transactionDetail.productVariantId);
@@ -240,7 +239,6 @@ export class TransactionController {
             
             // Get product variant from database
             const productVariant = await new ProductDetailService().findOne(transactionDetail.productVariantId);
-            console.log(productVariant);
             if (!productVariant) continue;
 
             /**
