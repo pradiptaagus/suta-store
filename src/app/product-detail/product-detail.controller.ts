@@ -22,13 +22,13 @@ export class ProductDetailController {
         const page = req.query?.page ? +req.query.page : 1;
 
         const query: FindAllProductDetailDto = {
-            productName: req.query?.productName?.toString(),
+            search: req.query?.search?.toString(),
             size: size,
             page: page,
         }
 
         const countQuery: CountProductDetailDto = {
-            productName: req.query?.productName?.toString()
+            search: req.query?.productName?.toString()
         }
 
         const productDetails = await new ProductDetailService().findAll(query);
