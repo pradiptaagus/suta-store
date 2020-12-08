@@ -81,7 +81,9 @@ export class TransactionService {
             const fullDate = `${year}-${month}-${date}`;
             transaction.date = fullDate;
         }
+        transaction.discount = body.discount;
         transaction.transactionTotal = body.transactionTotal ? body.transactionTotal : 0;
+        transaction.paymentAmount = body.paymentAmount;
         const result = await this.transactionRepository.save(transaction);
         return result;
     }
@@ -99,7 +101,9 @@ export class TransactionService {
             const fullDate = `${year}-${month}-${date}`;
             transaction.date = fullDate;
         }
+        transaction.discount = body.discount;
         transaction.transactionTotal = body.transactionTotal ? body.transactionTotal : 0;
+        transaction.paymentAmount = body.paymentAmount;
         const result = await this.transactionRepository.save(transaction);
         return result;
         
