@@ -13,10 +13,10 @@ export class ProductDetailService {
     }
 
     async totalRecord(query: CountProductDetailDto) {
-        const productName = query.productName;
+        const search = query.search;
 
-        let whereClause: string = `"product"."deletedAt" is null`;
-        if (productName) whereClause = `"product"."name" like '%${productName}%' and "product"."deletedAt" is null`;
+        let whereClause: string[] = [`"product"."deletedAt" is null`];
+        if (search) whereClause.push(`"product"."name" like '%${search}%' or "product"."code" like '%${search}%'`);
 
         return await this.productDetailRepository.count({
             join: {
@@ -25,18 +25,18 @@ export class ProductDetailService {
                     product: "productDetail.product"
                 }
             },
-            where: whereClause
+            where: whereClause.join(" and ")
         });
     }
 
     async findAll(query: FindAllProductDetailDto): Promise<ProductDetail[]> {
         const take = query.size ? query.size : 10;
         const skip = query.page ? (query.page - 1) * take : 0;
-        const productName = query.productName;
+        const search = query.search;
 
-        let whereClause: string = `"product"."deletedAt" is null`;
-        if (productName) whereClause = `"product"."name" like '%${productName}%' and "product"."deletedAt" is null`;
-
+        let whereClause: string[] = [`"product"."deletedAt" is null`];
+        if (search) whereClause.push(`"product"."name" like '%${search}%' or "product"."code" like '%${search}%'`);
+        
         return await this.productDetailRepository.find({
             join: {
                 alias: "productDetail",
@@ -44,7 +44,7 @@ export class ProductDetailService {
                     product: "productDetail.product"
                 }
             },
-            where: whereClause,
+            where: whereClause.join(" and "),
             take: take,
             skip: skip
         });
