@@ -29,6 +29,7 @@ export class TransactionController {
         this.router.get(this.viewPath, this.index);
         this.router.get(`${this.viewPath}/new`, this.add);
         this.router.get(`${this.viewPath}/:id`, this.view);
+        this.router.get(`/cashier`, this.cashier);
     }
 
     index(req: Request, res: Response) {
@@ -43,6 +44,10 @@ export class TransactionController {
         res.render("transaction/detail.ejs", {
             id: req.params.id
         });
+    }
+
+    cashier(req: Request, res: Response) {
+        res.render("transaction/cashier.ejs");
     }
 
     /**
@@ -117,7 +122,9 @@ export class TransactionController {
         const body: {
             date: string,
             note: string,
-            transactionDetails: {
+            discount: number,
+            paymentAmount: number;
+            productSnapshots: {
                 productVariantId: string,
                 qty: number,
                 discount: number|string
@@ -125,7 +132,7 @@ export class TransactionController {
         } = req.body;
 
         // Get transaction detail array
-        const transactionDetails = body.transactionDetails;
+        const productSnapshots = body.productSnapshots;
 
         // Validate request
         await check("date")
@@ -141,8 +148,15 @@ export class TransactionController {
             .isString().withMessage("Note field required string input!")
             .trim()
             .run(req);
-        await check("transactionDetails").notEmpty().withMessage("Products is required!").run(req);
-        await check("transactionDetails.*.productVariantId")
+        await check("discount")
+            .isNumeric().withMessage("Discount field value is not valid!")
+            .run(req);
+        await check("paymentAmount")
+            .notEmpty().withMessage("Payment amount field is required!")
+            .isNumeric().withMessage("Payment amount field value is not valid!")
+            .run(req);
+        await check("productSnapshots").notEmpty().withMessage("Products is required!").run(req);
+        await check("productSnapshots.*.productVariantId")
             .notEmpty().bail().withMessage("Product variant field is required!")
             .custom(async(value: string) => {
                 /**
@@ -156,11 +170,11 @@ export class TransactionController {
                 return true;
             })
             .run(req);
-        await check("transactionDetails.*.qty")
+        await check("productSnapshots.*.qty")
             .notEmpty().bail().withMessage("Product quantity field is required!")
             .isNumeric({no_symbols: true}).bail().withMessage("Product quantity field value should be number!")
             .run(req);
-        await check("transactionDetails.*.discount")
+        await check("productSnapshots.*.discount")
             .custom(value => {
                 if (!value || value === undefined) return true;
                 switch (value) {
@@ -183,30 +197,33 @@ export class TransactionController {
         // End validate request
 
         // Check transaction details body
-        const transactionDetailErrors: any = {};
-        for (let i = 0; i < transactionDetails.length; i++) {
-            const transactionDetail = transactionDetails[i];
+        const productSnapshotErrors: any = {};
+        console.log(productSnapshots);
+        for (let i = 0; i < productSnapshots.length; i++) {
+            const transactionDetail = productSnapshots[i];
             const productVariant = await new ProductDetailService().findOne(transactionDetail.productVariantId);
 
             // Check availability of product variant
             if (!productVariant) {
-                transactionDetailErrors[`transactionDetails[${i}].productVariantId`] = "Product variant not found!";
+                productSnapshotErrors[`productSnapshots[${i}].productVariantId`] = "Product variant not found!";
             }
             // Check product variant stock
             else if (transactionDetail.qty > productVariant.qty) {
-                transactionDetailErrors[`transactionDetails[${i}].qty`] = "Product quantity requested is exceed the limit!";
+                productSnapshotErrors[`productSnapshots[${i}].qty`] = "Product quantity requested is exceed the limit!";
             }
         }
 
-        if (Object.keys(transactionDetailErrors).length > 0) {
-            return new ResponseBuilder().storeResponse(res, false, `transaction`, transactionDetailErrors);
+        if (Object.keys(productSnapshotErrors).length > 0) {
+            return new ResponseBuilder().storeResponse(res, false, `transaction`, productSnapshotErrors);
         }
 
         // Create store transaction DTO (Data Transfer Object)
         const transactionBody: StoreTransactionDTO = {
             note: body.note,
             date: body.date,
-            transactionTotal: 0
+            discount: body.discount,
+            transactionTotal: 0,
+            paymentAmount: body.paymentAmount
         }
 
         // Store transaction
@@ -217,12 +234,13 @@ export class TransactionController {
 
         // Loop for create new product snapshot and transaction detail
         let transactionTotal: number = 0;
-        for (let i = 0; i < transactionDetails.length; i++) {
-            // Get transaction detail item [i] from transactionDetails array
-            const transactionDetail = transactionDetails[i];
+        for (let i = 0; i < productSnapshots.length; i++) {
+            // Get transaction detail item [i] from productSnapshots array
+            const transactionDetail = productSnapshots[i];
             
             // Get product variant from database
             const productVariant = await new ProductDetailService().findOne(transactionDetail.productVariantId);
+            console.log(productVariant);
             if (!productVariant) continue;
 
             /**
@@ -283,7 +301,11 @@ export class TransactionController {
 
         // Update transaction total
         const updateBody: UpdateTransctionDTO = {
-            transactionTotal: transactionTotal
+            note: body.note,
+            date: body.date,
+            discount: body.discount,
+            transactionTotal: transactionTotal - body.discount,
+            paymentAmount: body.paymentAmount
         }
         const updateTransactionResult = await new TransactionService().update(updateBody, transaction.id);
 
@@ -301,21 +323,20 @@ export class TransactionController {
     async update(req: Request, res: Response, next: NextFunction) {
         // Request body mapping
         const body: {
-            date?: string,
-            note?: string,
-            transactionDetails: {
+            date: string,
+            note: string,
+            discount: number,
+            paymentAmount: number,
+            productSnapshot: {
                 id: string,
-                productSnapshot: {
-                    id: string,
-                    qty: number,
-                    discount?: number,
-                    productVariantId: string
-                }
+                qty: number,
+                discount?: number,
+                productVariantId: string
             }[]
         } = req.body;
         
         // Get transaction details array
-        const transactionDetails = body.transactionDetails;
+        const productSnapshots = body.productSnapshot;
 
         // Get parameter request
         const id = req.params.id;
@@ -339,13 +360,19 @@ export class TransactionController {
             .isString().withMessage("Note field required string input!")
             .trim()
             .run(req);
-        await check("transactionDetails").notEmpty().withMessage("Products is required!").run(req);
-        // await check("transactionDetails.*.productSnapshot.id").notEmpty().withMessage("Product variant field is required!").run(req);
-        await check("transactionDetails.*.productSnapshot.qty")
+        await check("discount")
+            .isNumeric().withMessage("Discount field value is not valid!")
+            .run(req);
+        await check("paymentAmount")
+            .notEmpty().withMessage("Payment amount field is required!")
+            .isNumeric().withMessage("Payment amount field value is not valid!")
+            .run(req);
+        await check("productSnapshots").notEmpty().withMessage("Products is required!").run(req);
+        await check("productSnapshots.*.qty")
             .notEmpty().bail().withMessage("Product quantity field is required!")
             .isNumeric({no_symbols: true}).bail().withMessage("Product quantity field value should be number!")
             .run(req);
-        await check("transactionDetails.*.productSnapshot.discount")
+        await check("productSnapshots.*.discount")
             .custom(value => {
                 if (!value || value === undefined) return true;
                 switch (value) {
@@ -356,7 +383,7 @@ export class TransactionController {
                 }
             })
             .run(req);
-        await check("transactionDetails.*.productSnapshot.productVariantId")
+        await check("productSnapshots.*.productVariantId")
             .notEmpty().bail().withMessage("Product variant field is required!")
             .custom(async(value: string) => {
                 /**
@@ -381,31 +408,33 @@ export class TransactionController {
         }
         // End validate request
 
-        // Check transaction details body
-        const transactionDetailErrors: any = {};
-        for (let i = 0; i < transactionDetails.length; i ++) {
-            const transactionDetail = transactionDetails[i];
-            const productVariant = await new ProductDetailService().findOne(transactionDetail.productSnapshot.productVariantId);
+        // Check product snapshot body
+        const productSnapshotErrors: any = {};
+        for (let i = 0; i < productSnapshots.length; i ++) {
+            const transactionDetail = productSnapshots[i];
+            const productVariant = await new ProductDetailService().findOne(transactionDetail.productVariantId);
 
             // Check availability of product variant
             if (!productVariant) {
-                transactionDetailErrors[`transactionDetails[${i}].productVariantId`] = "Product variant not found!";
+                productSnapshotErrors[`productSnapshots[${i}].productVariantId`] = "Product variant not found!";
             }
             // Check product variant stock
-            else if (productVariant && !(productVariant.qty > transactionDetail.productSnapshot.qty)) {
-                transactionDetailErrors[`transactionDetails[${i}].qty`] = "Product quantity requested is exceed the limit!";
+            else if (productVariant && !(productVariant.qty > transactionDetail.qty)) {
+                productSnapshotErrors[`productSnapshots[${i}].qty`] = "Product quantity requested is exceed the limit!";
             }
         }
 
-        if (Object.keys(transactionDetailErrors).length > 0) {
-            return new ResponseBuilder().updateResponse(res, false, `transaction`, transactionDetailErrors);
+        if (Object.keys(productSnapshotErrors).length > 0) {
+            return new ResponseBuilder().updateResponse(res, false, `transaction`, productSnapshotErrors);
         }
 
         // Create update transaction DTO (Data Transfer Object)
         const transactionBody: UpdateTransctionDTO = {
             note: body.note,
             date: body.date,
+            discount: body.discount,
             transactionTotal: 0,
+            paymentAmount: body.paymentAmount
         }
 
         // Update transaction
@@ -415,13 +444,13 @@ export class TransactionController {
         }
         
         /**
-         * Loop transactionDetails array 
+         * Loop productSnapshots array 
          * to update transaction detail and product snapshot
          */        
         let transactionTotal: number = 0;
-        for (let i = 0; i < transactionDetails.length; i++) {
-            // Get transaction detail item [i] from transactionDetails array
-            const transactionDetail = transactionDetails[i];
+        for (let i = 0; i < productSnapshots.length; i++) {
+            // Get transaction detail item [i] from productSnapshots array
+            const transactionDetail = productSnapshots[i];
 
             /**
              * Get product variant object from database.
@@ -429,7 +458,7 @@ export class TransactionController {
              * If product variant doesn't exist, it's mean there's no desired product variant
              * and product snapshot modifcation coludn't be done.
              */
-            const productVariant = await new ProductDetailService().findOne(transactionDetail.productSnapshot.productVariantId);
+            const productVariant = await new ProductDetailService().findOne(transactionDetail.productVariantId);
             if (!productVariant) continue;
 
             /**
@@ -439,10 +468,10 @@ export class TransactionController {
              */
             let discount = 0;
             if (
-                transactionDetail.productSnapshot.discount &&
-                transactionDetail.productSnapshot.discount !== undefined
+                transactionDetail.discount &&
+                transactionDetail.discount !== undefined
             ) {
-                discount = transactionDetail.productSnapshot.discount;
+                discount = transactionDetail.discount;
             }
 
             /**
@@ -455,10 +484,10 @@ export class TransactionController {
                     : productVariant.price
 
             // Calculate total price
-            const subTotal = totalPrice * transactionDetail.productSnapshot.qty;
+            const subTotal = totalPrice * transactionDetail.qty;
             
             // Add subTotal to transactionTotal
-            transactionTotal = transactionTotal + totalPrice;
+            transactionTotal = transactionTotal + subTotal;
 
             // Create product snapshot DTO (Data Transfer Object)
             const productSnapshotBody: ProductSnapshotDTO = {
@@ -467,7 +496,7 @@ export class TransactionController {
                 code: productVariant.product.code,
                 name: productVariant.product.name,
                 unit: productVariant.unit,
-                qty: +transactionDetail.productSnapshot.qty,
+                qty: +transactionDetail.qty,
                 price: productVariant.price,
                 discount: discount,
                 totalPrice: totalPrice,
@@ -478,21 +507,21 @@ export class TransactionController {
              * Execute this section when transaction detail id and product variant exist.
              * This section goal is to modify product snapshot.
              */
-            if (transactionDetail.id && transactionDetail.productSnapshot.id) {
+            if (transactionDetail.id && transactionDetail.id) {
                 /** 
                  * Reduce product variant stock
                  * New product variant stock = (old product variant stock + old product snapshot stock) - new product snapshot stock
                  */
-                const selectedProductSnapshot = await new ProductSnapshotService().findOne(transactionDetail.productSnapshot.id);
+                const selectedProductSnapshot = await new ProductSnapshotService().findOne(transactionDetail.id);
                 if (!selectedProductSnapshot) continue;
-                const newQuantity = (productVariant.qty + selectedProductSnapshot.qty) - transactionDetail.productSnapshot.qty;
+                const newQuantity = (productVariant.qty + selectedProductSnapshot.qty) - transactionDetail.qty;
                 const reduceProductVariantStockResult = new ProductDetailService().updateStock(newQuantity, productVariant.id);
                 if (!reduceProductVariantStockResult) {
                     return new ResponseBuilder().internalServerError(res);
                 }
                 
                 // Update product snapshot
-                const productSnapshot = await new ProductSnapshotService().update(productSnapshotBody, transactionDetail.productSnapshot.id);
+                const productSnapshot = await new ProductSnapshotService().update(productSnapshotBody, transactionDetail.id);
                 if (!productSnapshot) {
                     return new ResponseBuilder().internalServerError(res);
                 }                
@@ -510,7 +539,7 @@ export class TransactionController {
                 }
 
                 // Reduce product variant stock
-                const newQuantity = productVariant.qty - transactionDetail.productSnapshot.qty;
+                const newQuantity = productVariant.qty - transactionDetail.qty;
                 const reduceProductVariantStockResult = new ProductDetailService().updateStock(newQuantity, productVariant.id);
                 if (!reduceProductVariantStockResult) {
                     return new ResponseBuilder().internalServerError(res);
@@ -520,7 +549,11 @@ export class TransactionController {
 
         // Update transaction total
         const updateBody: UpdateTransctionDTO = {
-            transactionTotal: transactionTotal
+            note: body.note,
+            date: body.date,
+            discount: body.discount,
+            transactionTotal: transactionTotal - body.discount,
+            paymentAmount: body.paymentAmount
         }
         await new TransactionService().update(updateBody, transaction.id);
 
