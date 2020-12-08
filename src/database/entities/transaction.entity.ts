@@ -13,7 +13,13 @@ export class Transaction {
     date!: string;
 
     @Column({type: "int", nullable: true})
+    discount!: number;
+
+    @Column({type: "int", nullable: true})
     transactionTotal!: number;
+
+    @Column({type: "int", nullable: true})
+    paymentAmount!: number;
 
     @CreateDateColumn()
     createdAt!: Timestamp;
