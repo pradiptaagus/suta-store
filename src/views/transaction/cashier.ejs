@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambah Transaksi</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2-bootstrap-theme/0.1.0-beta.10/select2-bootstrap.min.css" integrity="sha512-kq3FES+RuuGoBW3a9R2ELYKRywUEQv0wvPTItv3DSGqjpbNtGWVdvT8qwdKkqvPzT93jp8tSF4+oN4IeTEIlQA==" crossorigin="anonymous" />
+</head>
+<body>
+    <%- include("../partials/navbar.ejs") -%>
+    <div class="container my-5">
+        <h1 class="mb-3">Penjualan</h1>
+        <div class="row mb-3">
+            <div class="col-4">
+                <div class="border rounded" style="padding: 0.75rem;">
+                    <div class="form-group row">
+                        <label for="date" class="col-12 col-md-3 col-form-label">Tanggal</label>
+                        <div class="col-md-9">
+                            <input class="form-control" type="date" name="date" id="date" style="width: initial;">
+                            <div class="invalid-feedback" id="dateError"></div>
+                        </div>
+                    </div>
+                    <div class="form-group mb-0 row">
+                        <label for="note" class="col-12 col-md-3 col-form-label">Catatan</label>
+                        <div class="col-md-9">
+                            <textarea class="form-control" name="note" id="note" rows="3"></textarea>
+                            <div class="invalid-feedback" id="noteError"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="text-right d-flex justify-content-between bg-dark text-white h-100 px-2 py-3 rounded flex-wrap">
+                    <div class="text-danger" style="font-size: 2rem">Bayar</div>
+                    <div style="font-size: 5rem; line-height: initial;">
+                        <span id="paymentAmount"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive border rounded mb-3">
+            <table class="table table-bordered mb-0">
+                <thead>
+                    <tr>
+                        <th class="border-top-0 border-left-0" style="width: 200px;">Kode</th>
+                        <th class="border-top-0">Nama produk</th>
+                        <th class="border-top-0" style="width: 150px;">Harga satuan</th>
+                        <th class="border-top-0" style="width: 100px">Banyak</th>
+                        <th class="border-top-0" style="width: 150px">Diskon (IDR)</th>
+                        <th class="border-top-0 border-right-0" style="width: 150px;">Total</th>
+                    </tr>
+                </thead>
+                <tbody id="table-content"></tbody>
+            </table>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col">
+                <div class="border rounded" style="padding: 0.75rem;">
+                    <div class="d-flex mb-3">
+                        <div class="pt-2" style="width: 150px">Total</div>
+                        <div class="bg-dark text-white w-100 p-2 rounded">
+                            <span id="transactionTotal"></span>
+                        </div>
+                    </div>
+                    <div class="d-flex mb-3">
+                        <div class="pt-2" style="width: 150px">Diskon (IDR)</div>
+                        <div class="w-100">
+                            <input type="text" class="form-control" name="discount" id="discount" value="0" style="width: 150px;" onkeyup="handleChangeTransactionDiscount(this)">
+                        </div>
+                    </div>
+                    <div class="d-flex">
+                        <div class="pt-2" style="width: 150px;">Grand total</div>
+                        <div class="bg-dark text-white w-100 p-2 rounded">
+                            <span id="grandTotal"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="border rounded" style="padding: 0.75rem;">
+                    <div class="d-flex mb-3">
+                        <div class="pt-2" style="width: 150px;">Bayar</div>
+                        <div class="w-100">
+                            <input type="text" name="amount" id="amount" class="form-control" data-type="currency" style="width: 150px;" onkeyup="handleChangePaymentAmount(this)">
+                        </div>
+                    </div>
+                    <div class="d-flex">
+                        <div class="pt-2" style="width: 150px;">Kembalian</div>
+                        <div class="bg-dark text-white w-100 p-2">
+                            <span id="cashBackAmount"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-success" id="saveBtn">Simpan transaksi</button>
+        <a href="/transaction" class="btn btn-secondary ml-2">Kembali</a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
+    <script>
+        let transactionDetails = [];
+        let transactionTotal = 0;
+        let transactionDiscount = 0;
+        let grandTransactionTotal = 0;
+        let paymentAmount = 0;
+        let cashBackAmount = 0;
+
+        $("document").ready(function() {
+            setDefaultDate();
+            addTransactionItem();
+            renderTransactionItem();
+            renderTransactionTotal();
+            renderGrandTotal();
+            renderCashBackAmount();
+            initSave();
+        });
+
+        function setDefaultDate() {
+            const current = new Date();
+            const currentDate = 
+                current.getFullYear() + "-" + 
+                current.getMonth() + "-" + 
+                (current.getDate() < 10 ? "0" + current.getDate() : current.getDate());
+            $("#date").val(currentDate);
+        }
+
+        function addTransactionItem() {
+            transactionDetails.push({
+                id: null,
+				unit: null,
+                qty: 1,
+                availableQty: 1,
+				price: 0,
+                storageType: null,
+                discount: 0,
+                subTotal: 0,
+				product: {
+					id: null,
+					code: null,
+					name: null,
+				}
+            });
+        }
+
+        function initAddTransactionItem() {
+            $("#addTransactionItemBtn").click(function() {
+                addTransactionItem();
+                renderTransactionItem();
+            });
+        }
+
+        function renderTransactionItem() {
+            const element = $("#table-content");
+            element.html("");
+            transactionDetails.forEach((transactionDetail, index) => {
+                element.append(
+                    '<tr>'+
+                        '<td class="border-left-0">'+
+                            '<span id="code-'+index+'">'+
+                                (transactionDetail.product.code || "-") +
+                            '</span>'+
+                        '</td>'+
+                        '<td>'+
+                            '<select class="custom-select" name="name['+index+']" id="name['+index+']" data-key="name" data-index="'+index+'" onchange="handleChangeProductName(this)">'+
+                            '</select>'+
+                            '<div class="invalid-feedback" id="nameError-'+index+'"></div> '+
+                        '</td>'+
+                        '<td>'+
+                            '<span id="price-'+index+'">'+
+                                (
+                                    new Intl.NumberFormat("en-US", {
+                                        style: "currency",
+                                        currency: "IDR"
+                                    }).format(transactionDetail.price)
+                                ) +
+                                '/' +
+                                (transactionDetail.unit || "unit") +
+                            '</span></td>'+
+                        '<td>'+
+                            '<div class="d-flex">'+
+                                '<div name="decreaseQty" data-index="'+index+'" class="btn btn-sm btn-primary" style="width: 30px; border-top-right-radius: 0; border-bottom-right-radius: 0">-</div>'+
+                                '<input class="form-control form-control-sm rounded-0 text-center" type="text" name="qty['+index+']" id="qty['+index+']" value="'+transactionDetail.qty+'" data-key="qty" data-index="'+index+'" data-numberonly="true" style="width: 50px;">'+
+                                '<div name="increaseQty" data-index="'+index+'" class="btn btn-sm btn-primary" style="width: 30px; border-top-left-radius: 0; border-bottom-left-radius: 0">+</div>'+
+                            '</div>'+
+                            '<div class="invalid-feedback" id="qtyError-'+index+'"></div>'+
+                        '</td>'+
+                        '<td>'+
+                            '<input class="form-control form-control-sm" type="text" name="discount['+index+']" id="discount['+index+']" value="'+transactionDetail.discount+'" data-key="discount" data-index="'+index+'" data-numberonly="true" onkeyup="handleChangeTransactionDetailDiscount(this)" style="width: 120px;">'+
+                            '<div class="invalid-feedback" id="discountError"></div>'+
+                        '</td>'+
+                        '<td class="border-right-0">' +
+                            '<span id="subTotal-'+index+'">'+
+                                (
+                                    new Intl.NumberFormat("en-US", {
+                                        style: "currency", currency: "IDR"
+                                    }).format(transactionDetail.subTotal)                                    
+                                ) +
+                            '</span>' +
+                        '</td>'+
+                    '</tr>'
+                );
+
+                if (transactionDetail.id) {
+                    $.ajax({
+                        method: "get",
+                        url: "/api/product-detail/" + transactionDetail.id,
+                        contentType: "application/json",
+                        success: function(result) {
+                            const data = result.data;
+                            const options = new Option(`${data.product.name} - ${data.storageType} (tersisa ${data.qty} ${data.unit})`, data.id, true, true);
+                            $("select[name='name["+index+"]']").append(options).trigger("change");
+                        },
+                        error: function(error) {
+                            console.log(error)
+                        }
+                    });
+                }
+            });
+
+            // Apply select2
+            $("select").select2({
+                placeholder: "Pilih",
+                theme: "bootstrap",
+                ajax: {
+                    url: "/api/product-detail",
+                    data: function(params) {
+                        const query = {
+                            search: params.term,
+                            size: 10,
+                            page: 1
+                        }
+                        return query;
+                    },
+                    processResults: function(data) {
+                        const pagination = data.data.pagination;
+
+                        function filterData() {
+                            let arr = [];
+                            data.data.data.forEach((item) => {
+                                let exist = 0;
+                                transactionDetails.forEach((transactionDetail) => {
+                                    if (item.id === transactionDetail.id) {
+                                        exist += 1;
+                                    }
+                                });
+                                if (!exist) {
+                                    arr.push({
+                                        text: `${item.product.name} - ${item.storageType} (tersisa ${item.qty} ${item.unit})`,
+                                        id: item.id
+                                    });
+                                }
+                            });
+                            return arr;
+                        }
+
+                        return {
+                            results: filterData(),
+                            pagination: {
+                                more: pagination.page * pagination.size < pagination.totalRecord
+                            }
+                        }
+                    }
+                }
+            });
+            
+            element.append(
+                '<tr>'+
+                    '<td class="border-left-0 border-right-0 border-bottom-0" colspan="6">'+
+                        '<button id="addTransactionItemBtn" class="btn btn-primary btn-block">Tambah produk</button>'+
+                    '</td>'+
+                '</tr>'
+            );
+
+            initAllowNumberOnly();
+            quantityHandler();
+            initAddTransactionItem();
+        }
+
+        function handleChangeProductName(e) {
+            const el = $(e);
+            const productDetailId = el.val();
+            const index = el.data("index");
+            $.ajax({
+                method: "get",
+                url: "/api/product-detail/" + productDetailId,
+                contentType: "application/json",
+                success: function(result) {
+                    transactionDetails[index]["id"] = result.data.id;
+                    transactionDetails[index]["unit"] = result.data.unit;
+                    transactionDetails[index]["availableQty"] = result.data.qty;
+                    transactionDetails[index]["price"] = result.data.price;
+                    transactionDetails[index]["storageType"] = result.data.storageType;
+                    transactionDetails[index]["product"]["id"] = result.data.product.id;
+                    transactionDetails[index]["product"]["code"] = result.data.product.code;
+                    transactionDetails[index]["product"]["name"] = result.data.product.name;
+
+                    $("#code-"+index).text(result.data.product.code);
+                    $("#price-"+index).text(new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: "IDR"
+                    }).format(result.data.price) + "/" + result.data.unit);
+
+                    // Calculate and render sub total
+                    transactionDetails[index].subTotal = calculateSubTotal(transactionDetails[index].price, transactionDetails[index].discount, transactionDetails[index].qty);
+                    renderSubTotal(index, transactionDetails[index].subTotal);
+
+                    // Calculate and render transaction total
+                    transactionTotal = calculateTransactionTotal();
+                    renderTransactionTotal();
+
+                    // Calculate and render grand transaction total
+                    grandTransactionTotal = calculateGrandTotal();
+                    renderGrandTotal();
+
+                    // Calculate and render cash back amount
+                    cashBackAmount = calculateCashBackAmount();
+                    renderCashBackAmount();
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+        }
+
+        function renderSubTotal(index, subTotal) {
+            $("#subTotal-"+index).text(
+                new Intl.NumberFormat("en-US", {
+                    style: "currency", currency: "IDR"
+                }).format(subTotal)
+            );
+        }
+
+        function initAllowNumberOnly() {
+            $("*[data-numberonly=true]").on("keypress", function(e) {
+                const ASCIICode = e.which ? e.which : e.keyCode;
+                if (ASCIICode > 31 && (ASCIICode < 48 || ASCIICode > 57)) {
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        function quantityHandler() {
+            $("div[name=decreaseQty]").click(function() {
+                const index = $(this).data("index");
+                const oldQty = +transactionDetails[index].qty;
+                let newQty = oldQty;
+                if (oldQty > 1) {
+                    newQty = oldQty - 1;
+                }
+                $("input[name='qty["+index+"]']").val(newQty);
+                transactionDetails[index].qty = newQty;
+
+                // Calculate and render sub total
+                transactionDetails[index].subTotal = calculateSubTotal(transactionDetails[index].price, transactionDetails[index].discount, transactionDetails[index].qty);
+                renderSubTotal(index, transactionDetails[index].subTotal);
+
+                // Calculate and render transaction total
+                transactionTotal = calculateTransactionTotal();
+                renderTransactionTotal();
+
+                // Calculate and render grand transaction total
+                grandTransactionTotal = calculateGrandTotal();
+                renderGrandTotal();
+
+                // Calculate and render cash back amount
+                cashBackAmount = calculateCashBackAmount();
+                renderCashBackAmount();
+            });
+            
+            $("div[name=increaseQty]").click(function() {
+                const index = $(this).data("index");
+                const oldQty = +transactionDetails[index].qty;
+                let newQty = oldQty;
+                if (newQty < +transactionDetails[index].availableQty) {
+                    newQty += 1;
+                }
+                $("input[name='qty["+index+"]']").val(newQty);
+                transactionDetails[index].qty = newQty;
+
+                // Calculate and render sub total
+                transactionDetails[index].subTotal = calculateSubTotal(transactionDetails[index].price, transactionDetails[index].discount, transactionDetails[index].qty);
+                renderSubTotal(index, transactionDetails[index].subTotal);
+
+                // Calculate and render transaction total
+                transactionTotal = calculateTransactionTotal();
+                renderTransactionTotal();
+
+                // Calculate and render grand transaction total
+                grandTransactionTotal = calculateGrandTotal();
+                renderGrandTotal();
+
+                // Calculate and render cash back amount
+                cashBackAmount = calculateCashBackAmount();
+                renderCashBackAmount();
+            });
+        }
+
+        function calculateSubTotal(price, discount, qty) {
+            if (price > 0) {
+                return (parseInt(price) - parseInt(discount)) * parseInt(qty);
+            } else {
+                return 0;
+            }
+        }
+
+        function calculateTransactionTotal() {
+            let total = 0;
+            transactionDetails.forEach((transactionDetail) => {
+                total += transactionDetail.subTotal
+            });
+            return total;
+        }
+
+        function renderTransactionTotal() {
+            $("#transactionTotal").text(new Intl.NumberFormat("en-US", {
+                style: "currency", currency: "IDR"
+            }).format(transactionTotal));
+        }
+
+        function calculateGrandTotal() {
+            return parseInt(transactionTotal || 0) - parseInt(transactionDiscount || 0);
+        }
+
+        function renderGrandTotal() {
+            $("#grandTotal").text(new Intl.NumberFormat("en-US", {
+                style: "currency", currency: "IDR"
+            }).format(grandTransactionTotal));
+
+            renderGrandPaymentAmount();
+        }
+
+        function renderGrandPaymentAmount() {
+            $("#paymentAmount").text(new Intl.NumberFormat("en-US", {
+                    style: "currency", currency: "IDR"
+            }).format(grandTransactionTotal));
+        }
+
+        function calculateCashBackAmount() {
+            if (paymentAmount && paymentAmount > 0) {
+                return paymentAmount - transactionTotal;
+            } else {
+                return 0;
+            }
+        }
+
+        function renderCashBackAmount() {
+            const el = $("#cashBackAmount");
+            el.text(new Intl.NumberFormat("en-US", {
+                style: "currency", currency: "IDR"
+            }).format(cashBackAmount));
+            
+            if (cashBackAmount < 0) {
+                el.addClass("text-danger");
+            } else {
+                el.removeClass("text-danger");
+            }
+        }
+
+        function handleChangeTransactionDiscount(e) {
+            transactionDiscount = $(e).val();
+            if (transactionDiscount === "") {
+                $(e).val(0);
+            }            
+            grandTransactionTotal = calculateGrandTotal();
+            renderGrandTotal();
+        }
+
+        function handleChangePaymentAmount(e) {
+            paymentAmount = $(e).val();
+            if (paymentAmount && paymentAmount > 0) {
+                cashBackAmount = calculateCashBackAmount();
+                renderCashBackAmount();
+            }
+        }
+
+        function handleChangeTransactionDetailDiscount(e) {
+            const el = $(e);
+            const index = el.data("index");
+            const discount = el.val();
+            transactionDetails[index].discount = discount;
+            
+            // Calculate and render sub total
+            transactionDetails[index].subTotal = calculateSubTotal(transactionDetails[index].price, transactionDetails[index].discount, transactionDetails[index].qty);
+            renderSubTotal(index, transactionDetails[index].subTotal);
+
+            // Calculate and render transaction total
+            transactionTotal = calculateTransactionTotal();
+            renderTransactionTotal();
+
+            // Calculate and render grand transaction total
+            grandTransactionTotal = calculateGrandTotal();
+            renderGrandTotal();
+
+            // Calculate and render cash back amount
+            cashBackAmount = calculateCashBackAmount();
+            renderCashBackAmount();
+        }
+
+        function initSave() {
+            $("#saveBtn").click(function() {
+                if (paymentAmount < grandTransactionTotal) {
+                    alert("Jumlah bayar kurang dari total transaksi!");
+                    return;
+                }
+
+                $.ajax({
+                    method: "post",
+                    url: "/api/transaction",
+                    data: {
+                        date: $("#date").val(),
+                        note: $("#note").val(),
+                        discount: $("#discount").val(),
+                        paymentAmount: paymentAmount,
+                        productSnapshots: $.map(transactionDetails, function(transactionDetail) {
+                            return {
+                                productVariantId: transactionDetail.id,
+                                qty: transactionDetail.qty,
+                                discount: transactionDetail.discount
+                            }
+                        })
+                    },
+                    success: function(result) {
+                        alert("Transaksi berhasil disimpan");
+                        location.reload();
+                    },
+                    error: function(error) {
+                        alert("Transaksi gagal disimpan!");
+                        const errors = error.responseJSON.errors;
+                        
+                        if (errors.hasOwnProperty("date")) {
+                            const msg = errors.date;
+                            $("#dateError").text(msg);
+                            $("#date").addClass("is-invalid");
+                        } else {
+                            $("#date").removeClass("is-invalid");
+                        }
+
+                        if (errors.hasOwnProperty("note")) {
+                            const msg = errors.date;
+                            $("#noteError").text(msg);
+                            $("#note").addClass("is-invalid");
+                        } else {
+                            $("#note").removeClass("is-invalid");
+                        }
+
+                        transactionDetails.forEach((transactionDetail, index) => {
+                            if (errors.hasOwnProperty("productSnapshots["+index+"].productVariantId")) {
+                                const msg = errors["productSnapshots["+index+"].productVariantId"];
+                                $("#nameError-" + index).text(msg);
+                                $("select[name='name["+index+"]']").addClass("is-invalid");
+                            } else {
+                                $("select[name='name["+index+"]']").removeClass("is-invalid");
+                            }
+
+                            if (errors.hasOwnProperty("productSnapshots["+index+"].qty")) {
+                                const msg = errors["productSnapshots["+index+"].qty"];
+                                $("#qtyError-" + index).text(msg);
+                                $("#qtyContainer-" + index).addClass("is-invalid");
+                            } else {
+                                $("#qtyContainer-" + index).removeClass("is-invalid");
+                            }
+
+                            if (errors.hasOwnProperty("productSnapshots["+index+"].discount")) {
+                                const msg = errors["productSnapshots["+index+"].discount"];
+                                $("#discountError-" + index).text(msg);
+                                $("input[name='discount["+index+"]']").addClass("is-invalid");
+                            } else {
+                                $("input[name='discount["+index+"]']").removeClass("is-invalid");
+                            }
+                        });
+                    }
+                });
+            });
+        }
+    </script>
+</body>
