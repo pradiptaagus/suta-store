@@ -10,10 +10,10 @@
 </head>
 <body>
     <%- include("../partials/navbar.ejs") -%>
-    <div class="container my-5">
+    <div class="container-fluid my-5">
         <h1 class="mb-3">Penjualan</h1>
         <div class="row mb-3">
-            <div class="col-4">
+            <div class="col-5">
                 <div class="border rounded" style="padding: 0.75rem;">
                     <div class="form-group row">
                         <label for="date" class="col-12 col-md-3 col-form-label">Tanggal</label>
@@ -46,10 +46,11 @@
                     <tr>
                         <th class="border-top-0 border-left-0" style="width: 200px;">Kode</th>
                         <th class="border-top-0">Nama produk</th>
-                        <th class="border-top-0" style="width: 150px;">Harga satuan</th>
+                        <th class="border-top-0" style="width: 200px;">Harga satuan</th>
                         <th class="border-top-0" style="width: 100px">Banyak</th>
                         <th class="border-top-0" style="width: 150px">Diskon (IDR)</th>
-                        <th class="border-top-0 border-right-0" style="width: 150px;">Total</th>
+                        <th class="border-top-0" style="width: 200px;">Total</th>
+                        <th class="border-top-0 border-right-0 text-center" style="width: 85px">Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="table-content"></tbody>
@@ -84,12 +85,12 @@
                     <div class="d-flex mb-3">
                         <div class="pt-2" style="width: 150px;">Bayar</div>
                         <div class="w-100">
-                            <input type="text" name="amount" id="amount" class="form-control" data-type="currency" style="width: 150px;" onkeyup="handleChangePaymentAmount(this)">
+                            <input type="text" name="amount" id="amount" class="form-control" data-type="currency" style="width: 200px;" onkeyup="handleChangePaymentAmount(this)">
                         </div>
                     </div>
                     <div class="d-flex">
                         <div class="pt-2" style="width: 150px;">Kembalian</div>
-                        <div class="bg-dark text-white w-100 p-2">
+                        <div class="bg-dark text-white w-100 p-2 rounded">
                             <span id="cashBackAmount"></span>
                         </div>
                     </div>
@@ -149,9 +150,36 @@
             });
         }
 
+        function removeTransactionItem(index) {
+            transactionDetails.splice(index, 1);
+            
+            // Calculate and render transaction total
+            transactionTotal = calculateTransactionTotal();
+            renderTransactionTotal();
+
+            // Calculate and render grand transaction total
+            grandTransactionTotal = calculateGrandTotal();
+            renderGrandTotal();
+
+            // Calculate and render cash back amount
+            cashBackAmount = calculateCashBackAmount();
+            renderCashBackAmount();
+        }
+
         function initAddTransactionItem() {
             $("#addTransactionItemBtn").click(function() {
                 addTransactionItem();
+                renderTransactionItem();
+            });
+        }
+
+        function initDeleteTransactionItem() {
+            $(".removeTransactionItemBtn").click(function() {
+                const index = $(this).data("index");
+                removeTransactionItem(index);
+                if (transactionDetails.length === 0) {
+                    addTransactionItem();
+                }
                 renderTransactionItem();
             });
         }
@@ -204,6 +232,9 @@
                                 ) +
                             '</span>' +
                         '</td>'+
+                        '<td class="text-center">'+
+                            '<button class="btn btn-danger btn-sm removeTransactionItemBtn" data-index="'+index+'">Hapus</button>' +    
+                        '</td>' +
                     '</tr>'
                 );
 
@@ -272,7 +303,7 @@
             
             element.append(
                 '<tr>'+
-                    '<td class="border-left-0 border-right-0 border-bottom-0" colspan="6">'+
+                    '<td class="border-left-0 border-right-0 border-bottom-0" colspan="7">'+
                         '<button id="addTransactionItemBtn" class="btn btn-primary btn-block">Tambah produk</button>'+
                     '</td>'+
                 '</tr>'
@@ -281,6 +312,7 @@
             initAllowNumberOnly();
             quantityHandler();
             initAddTransactionItem();
+            initDeleteTransactionItem();
         }
 
         function handleChangeProductName(e) {
@@ -508,6 +540,8 @@
             $("#saveBtn").click(function() {
                 if (paymentAmount < grandTransactionTotal) {
                     alert("Jumlah bayar kurang dari total transaksi!");
+                    $("select").removeClass("is-invalid");
+                    $("input").removeClass("is-invalid");
                     return;
                 }
 
