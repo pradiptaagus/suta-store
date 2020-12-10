@@ -31,5 +31,5 @@ export class Transaction {
     deletedAt!: Timestamp;
 
     @OneToMany(() => ProductSnapshot, productSnapshot => productSnapshot.transaction)
-    productSnapshot!: ProductSnapshot;
+    productSnapshot!: ProductSnapshot[];
 }
