@@ -7,3 +7,4 @@ ormconfig.json
 yarn.lock
 yarn-error.log
 dist
+src/public/report
