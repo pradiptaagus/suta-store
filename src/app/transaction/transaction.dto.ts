@@ -25,3 +25,8 @@ export interface UpdateTransctionDTO {
     transactionTotal: number;
     paymentAmount: number;
 }
+
+export interface ReportTransactionDTO {
+    startDate: string;
+    endDate: string;
+}
