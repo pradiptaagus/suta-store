@@ -1,6 +1,6 @@
 import { Between, getConnection, Raw, Repository } from "typeorm";
 import { Transaction } from "../../database/entities/transaction.entity";
-import { CountTransactionDTO, FindAllTransactionDTO, StoreTransactionDTO, UpdateTransctionDTO } from "./transaction.dto";
+import { CountTransactionDTO, FindAllTransactionDTO, StoreTransactionDTO, UpdateTransctionDTO, ReportTransactionDTO } from "./transaction.dto";
 import { DateGenerator } from "../../helpers/date-generator.helper";
 
 export class TransactionService {
@@ -74,12 +74,7 @@ export class TransactionService {
         const transaction = new Transaction();
         transaction.note = body.note ? body.note : "";        
         if (!transaction.date || transaction.date === undefined) {
-            const current = new Date();
-            const year = current.getFullYear();
-            const month = current.getMonth();
-            const date = current.getDate();
-            const fullDate = `${year}-${month}-${date}`;
-            transaction.date = fullDate;
+            transaction.date = new DateGenerator().generateDate();
         }
         transaction.discount = body.discount;
         transaction.transactionTotal = body.transactionTotal ? body.transactionTotal : 0;
@@ -94,12 +89,7 @@ export class TransactionService {
 
         if (body.note) transaction.note = body.note;        
         if (!transaction.date || transaction.date === undefined) {
-            const current = new Date();
-            const year = current.getFullYear();
-            const month = current.getMonth();
-            const date = current.getDate();
-            const fullDate = `${year}-${month}-${date}`;
-            transaction.date = fullDate;
+            transaction.date = new DateGenerator().generateDate();
         }
         transaction.discount = body.discount;
         transaction.transactionTotal = body.transactionTotal ? body.transactionTotal : 0;
@@ -121,5 +111,30 @@ export class TransactionService {
                 .execute();
             return true;
         }
+    }
+
+    async report(query: ReportTransactionDTO): Promise<Transaction[]> {
+        if (!query.startDate || query.startDate === "undefined") {
+            query.startDate = new DateGenerator().generateDate();
+        } if (!query.endDate || query.endDate === "undefined") {
+            query.endDate = new DateGenerator().generateDate();
+        }
+        console.log(query)
+        return await this.transactionRepository.find({
+            join: {
+                alias: "transaction",
+                leftJoinAndSelect: {
+                    productSnapshot: "transaction.productSnapshot",
+                    productVariant: "productSnapshot.productVariant",
+                    product: "productVariant.product"
+                }
+            },
+            where: {
+                date: Between(`${query.startDate}`, `${query.endDate}`)
+            },
+            order: {
+                createdAt: "ASC"
+            }
+        });
     }
 }
