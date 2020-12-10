@@ -22,4 +22,8 @@ export class DateGenerator {
     generateTimestamp() {
         return `${this.year}-${this.month}-${this.date} ${this.hour}:${this.minute}:${this.second}.${this.milisecond}`;
     }
+
+    generateDate() {
+        return `${this.year}-${this.month}-${this.date}`;
+    }
 }
