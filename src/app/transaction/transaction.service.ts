@@ -119,7 +119,7 @@ export class TransactionService {
         } if (!query.endDate || query.endDate === "undefined") {
             query.endDate = new DateGenerator().generateDate();
         }
-        console.log(query)
+        
         return await this.transactionRepository.find({
             join: {
                 alias: "transaction",
