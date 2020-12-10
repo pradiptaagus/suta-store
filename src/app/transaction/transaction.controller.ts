@@ -5,9 +5,13 @@ import { ProductSnapshotDTO } from "../product-snapshot/product-snapshot.dto";
 import { ProductSnapshotService } from "../product-snapshot/product-snapshot.service";
 import validator from "validator";
 import { ProductDetailService } from "../product-detail/product-detail.service";
-import { CountTransactionDTO, FindAllTransactionDTO, StoreTransactionDTO, UpdateTransctionDTO } from "./transaction.dto";
+import { CountTransactionDTO, FindAllTransactionDTO, ReportTransactionDTO, StoreTransactionDTO, UpdateTransctionDTO } from "./transaction.dto";
 import { DateValidator } from "../../helpers/date-validator.helper";
 import { ResponseBuilder } from "../../helpers/response-builder.helper";
+import { DateGenerator } from "../../helpers/date-generator.helper";
+import path from "path";
+import fs from "fs";
+import ExcelJS from "ExcelJS";
 
 export class TransactionController {
     private path: string = "/api/transaction";
@@ -26,6 +30,7 @@ export class TransactionController {
         this.router.post(this.path, this.store);
         this.router.put(`${this.path}/:id`, this.update);
         this.router.delete(`${this.path}/:id`, this.delete);
+        this.router.get(`${this.viewPath}/report`, this.report);
         this.router.get(this.viewPath, this.index);
         this.router.get(`${this.viewPath}/new`, this.add);
         this.router.get(`${this.viewPath}/:id`, this.view);
@@ -577,5 +582,136 @@ export class TransactionController {
         // Delete transaction
         const product = await new TransactionService().delete(id);
         return new ResponseBuilder().deleteResponse(res, true, `transaction`);
+    }
+
+    async report(req: Request, res: Response) {
+        const startDate: string = req.query.startDate + "" || new DateGenerator().generateDate();
+        const endDate: string = req.query.endDate + "" || new DateGenerator().generateDate();
+
+        // Validate request
+        await check("startDate")
+            .custom(value => {
+                if (!value || value === undefined) return true;
+                if (!new DateValidator().validate(value)) {
+                    return Promise.reject("Start date field value should be date!")
+                }
+                return true;
+            })
+            .run(req);
+        await check("endDate")
+            .custom(value => {
+                if (!value || value === undefined) return true;
+                if (!new DateValidator().validate(value)) {
+                    return Promise.reject("End date field value should be date!")
+                }
+                return true;
+            })
+            .run(req);
+
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            let errorMessages: any = {};
+            errors.array().forEach(err => {
+                errorMessages[err.param] = err.msg;
+            });
+            return new ResponseBuilder().storeResponse(res, false, `transaction`, errorMessages);
+        }
+        // End validate request
+
+        const reportQuery: ReportTransactionDTO ={
+            startDate: startDate,
+            endDate: endDate
+        }
+        const transactions = await new TransactionService().report(reportQuery);
+
+        const workBook = new ExcelJS.Workbook();
+        workBook.creator = "pradiptaagus";
+        workBook.created = new Date();
+        workBook.modified = new Date();
+        workBook.views = [
+            {
+                x: 0, y: 0, width: 10000, height: 20000,
+                firstSheet: 0, activeTab: 1, visibility: 'visible'
+            }
+        ];
+        const workSheet = workBook.addWorksheet("Sheet 1");
+
+        // Create headers
+        workSheet.columns = [
+            {header: 'No', key: 'no'},
+            {header: 'Tanggal', key: 'tanggal'},
+            {header: 'Kode produk', key: 'kodeProduk'},
+            {header: 'Nama produk', key: 'namaProduk'},
+            {header: 'Lokasi penyimpanan', key: 'lokasiPenyimpanan'},
+            {header: 'Jumlah pembelian', key: 'jumlahPembelian'},
+            {header: 'Satuan', key: 'satuan'},
+            {header: 'Harga awal', key: 'hargaAwal'},
+            {header: 'Diskon', key: 'diskon'},
+            {header: 'Harga akhir', key: 'hargaAkhir'},
+            {header: 'Sub total', key: 'subTotal'}
+        ];
+
+        // Formating header
+        workSheet.columns.forEach(column => {
+            column.width = column.header && column.header?.length < 12 ? 12 : column.header?.length
+        });
+
+        // Make the header bold
+        workSheet.getRow(1).font = {bold: true}
+
+        // Insert data
+        for (let i = 0; i < transactions.length; i++) {
+            const transaction = transactions[i];
+            
+            for (let j = 0; j < transaction.productSnapshot.length; j++) {
+                const productSnapshot = transaction.productSnapshot[j];
+
+                if (j === 0) {
+                    workSheet.addRow({
+                        no: i + 1,
+                        tanggal: transaction.date,
+                        kodeProduk: productSnapshot.productVariant.product.code,
+                        namaProduk: productSnapshot.name,
+                        lokasiPenyimpanan: productSnapshot.productVariant.storageType === "store" ? "Toko" : "Gudang",
+                        jumlahPembelian: productSnapshot.qty,
+                        satuan: productSnapshot.productVariant.unit,
+                        hargaAwal: productSnapshot.productVariant.price,
+                        diskon: productSnapshot.discount,
+                        hargaAkhir: productSnapshot.totalPrice,
+                        subTotal: productSnapshot.subTotal
+                    }, "i");
+                } else {
+                    workSheet.addRow({
+                        no: "",
+                        tanggal: "",
+                        kodeProduk: productSnapshot.productVariant.product.code,
+                        namaProduk: productSnapshot.name,
+                        lokasiPenyimpanan: productSnapshot.productVariant.storageType === "store" ? "Toko" : "Gudang",
+                        jumlahPembelian: productSnapshot.qty,
+                        satuan: productSnapshot.productVariant.unit,
+                        hargaAwal: productSnapshot.productVariant.price,
+                        diskon: productSnapshot.discount,
+                        hargaAkhir: productSnapshot.totalPrice,
+                        subTotal: productSnapshot.subTotal
+                    }, "i");
+                }
+
+            }
+
+        }
+
+        // Path: '/src/public/report'
+        const reportDirPath = path.join(__dirname, "../../public/report");
+
+        // Check directory is exist and create if doesn't exist
+        if (!fs.existsSync(reportDirPath)) {
+            fs.mkdirSync(reportDirPath);
+        }
+
+        // Save the file
+        const fileName = "report.xlsx";
+        await workBook.xlsx.writeFile(`${reportDirPath}/${fileName}`);
+        
+        res.sendFile(`${reportDirPath}/${fileName}`);
     }
 }
