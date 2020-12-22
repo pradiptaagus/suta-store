@@ -1,4 +1,4 @@
-import { Between, getConnection, Raw, Repository } from "typeorm";
+import { Between, getConnection, Like, Raw, Repository } from "typeorm";
 import { Transaction } from "../../database/entities/transaction.entity";
 import { CountTransactionDTO, FindAllTransactionDTO, StoreTransactionDTO, UpdateTransctionDTO, ReportTransactionDTO } from "./transaction.dto";
 import { DateGenerator } from "../../helpers/date-generator.helper";
@@ -15,7 +15,8 @@ export class TransactionService {
         const endDate = query.endDate;
 
         const whereClause: Record<string, any> = {};
-        if ((!startDate || startDate !== "undefined") && (!endDate || endDate !== "undefined")) whereClause.date = Between(startDate, endDate);
+        if ((startDate && startDate !== "undefined") && (endDate && endDate !== "undefined")) whereClause.date = Between(startDate, endDate);
+        if (query.note && query.note !== "undefined") whereClause.note = Like(`${query.note}`);
 
         return await this.transactionRepository.count({
             join: {
@@ -37,7 +38,8 @@ export class TransactionService {
         const endDate = query.endDate;
 
         const whereClause: Record<string, any> = {};
-        if (startDate !== "undefined" && endDate !== "undefined") whereClause.date = Between(startDate, endDate);
+        if ((startDate && startDate !== "undefined") && (endDate && endDate !== "undefined")) whereClause.date = Between(startDate, endDate);
+        if (query.note && query.note !== "undefined") whereClause.note = Like(`${query.note}`);
 
         return await this.transactionRepository.find({
             join: {

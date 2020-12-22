@@ -11,25 +11,42 @@
     <%- include("../partials/navbar.ejs") -%>
     <div class="container my-5">
         <h1 class="mb-3">Transaksi</h1>
-        <div class="row justify-content-between mb-3">
-            <div class="col-12 col-md-6">
-                <a href="/cashier" class="btn btn-primary mb-3 mb-md-0">Tambah transksi</a>
-            </div>
-            <div class="col-12 col-md-6">
-                <button class="btn btn-info ml-md-2 d-flex float-md-right" data-toggle="modal" data-target="#reportModal">Download laporan</button>
-            </div>
+        <div class="d-sm-flex justify-content-between mb-3">
+            <a href="/cashier" class="btn btn-primary mb-3 mb-sm-0">Tambah transksi</a>
+            <button class="btn btn-info ml-md-2" data-toggle="modal" data-target="#reportModal">Download laporan</button>
         </div>
-        <form action="">
-            <div class="form-group">
-                <label for="showSize">Tampilkan per</label>
-                <select class="custom-select" name="showSize" id="showSize" style="width: initial">
-                    <option value="10">10</option>
-                    <option value="20">20</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
+        <div class="row mb-3">
+            <div class="col-md-8 order-2 order-sm-1 mb-3 mb-0-md">
+                <form method="get" class="mb-3">
+                    <label for="showSize" class="pr-1">Tampilkan per</label>
+                    <select class="custom-select" name="showSize" id="showSize" style="width: initial">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </form>
+                <form method="get" class="mb-3">
+                    <div class="d-flex">
+                        <label for="startDateFilter" class="col-form-label pr-2">Tanggal mulai</label>
+                        <input type="date" class="form-control" name="startDateFilter" id="startDateFilter" style="width: initial;">
+                    </div>
+                </form>
+                <form method="get">
+                    <div class="d-flex">
+                        <label for="endDateFilter" class="col-form-label pr-2">Tanggal akhir</label>
+                        <input type="date" class="form-control" name="endDateFilter" id="endDateFilter" style="width: initial;">
+                    </div>
+                </form>
             </div>
-        </form>
+            <form id="search-form" method="get" class="col-md-4 order-1 order-2-sm mb-3 mb-sm-0">
+                <div class="d-flex justify-content-end">
+                    <label for="search" class="col-form-label">Cari</label>
+                    <input class="form-control mx-2" type="search" name="search" id="search" placeholder="">
+                    <button class="btn btn-primary" style="flex: 0;">Cari</button>
+                </div>
+            </form>
+        </div>
         <div class="table-responsive">
             <table class="table">
                 <thead>
@@ -53,7 +70,7 @@
     <div class="modal fade" id="reportModal" aria-label="exportModal" aria-hidden="true" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form action="/transaction/report" method="get">
+                <form id="downloadForm" action="/transaction/report" method="get">
                     <div class="modal-header">
                         <h5 class="modal-title">Download laporan</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -89,13 +106,21 @@
         let queryUrl = {
             size: 10, 
             page: 1,
-            startDate: null,
-            endDate: null
+            startDate: getDefaultDate(),
+            endDate: getDefaultDate(),
+            note: ""
         }
 
         $("document").ready(function() {
             fetchData(queryUrl);
             initOnShowSizeChange();
+            setDefaultDate();
+            initHandleDateFilter();
+            initSearch();
+
+            $("#downloadForm").submit(function() {
+                $("#reportModal").modal("hide");
+            });
         });
 
         function fetchData(args) {
@@ -104,6 +129,7 @@
             if (args.page) queries.push("page=" + args.page);
             if (args.startDate) queries.push("startDate=" + args.startDate);
             if (args.endDate) queries.push("endDate=" + args.endDate);
+            if (args.note) queries.push("note=" + args.note);
 
             renderLoadingStatus("Memuat...");
 
@@ -181,6 +207,56 @@
                     '<td colspan="5" class="text-center">' + status + '</td>' + 
                 '</tr>'
             );
+        }
+
+        function setDefaultDate() {
+            $("#startDateFilter").val(getDefaultDate());
+            $("#endDateFilter").val(getDefaultDate());
+            $("#startDate").val(getDefaultDate());
+            $("#endDate").val(getDefaultDate());
+        }
+
+        function getDefaultDate() {
+            const current = new Date();
+            const currentDate = 
+                current.getFullYear() + "-" + 
+                (current.getMonth() + 1) + "-" + 
+                (current.getDate() < 10 ? "0" + current.getDate() : current.getDate());
+            return currentDate;
+        }
+
+        function initHandleDateFilter() {
+            const startDateEl = $("#startDateFilter");
+            const endDateEl = $("#endDateFilter");
+
+            function callback() {
+                queryUrl.startDate = startDateEl.val();
+                queryUrl.endDate = endDateEl.val();
+
+                // Equivalent date modal value
+                $("#startDate").val(startDateEl.val());
+                $("#endDate").val(endDateEl.val());
+
+                fetchData(queryUrl);
+            }
+            startDateEl.change(callback);
+
+            endDateEl.change(callback);
+        }
+
+        function initSearch() {
+            $("#search-form").submit(function(e) {
+                e.preventDefault();
+                const inputValue = $("#search").val();
+                queryUrl.page = 1;
+                queryUrl.note = inputValue;
+
+                if (inputValue.length === 0) {
+                    queryUrl.page = 1;
+                }
+
+                fetchData(queryUrl);
+            });
         }
     </script>
 </body>

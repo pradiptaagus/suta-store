@@ -67,6 +67,7 @@ export class TransactionController {
         const page = req.query?.page ? +req.query.page : 1;
         const startDate = req.query?.startDate+"";
         const endDate = req.query?.endDate+"";
+        const note = req.query?.note+"";
         const dateValidator = new DateValidator();
 
         if (startDate !== "undefined" && endDate !== "undefined") {
@@ -79,20 +80,22 @@ export class TransactionController {
             size: size, 
             page: page,
             startDate: startDate,
-            endDate: endDate
+            endDate: endDate,
+            note: note
         }
 
         const countQuery: CountTransactionDTO = {
             startDate: startDate,
-            endDate: endDate
+            endDate: endDate,
+            note: note
         }
 
-        const products = await new TransactionService().findAll(query);
+        const transactions = await new TransactionService().findAll(query);
         const totalRecord = await new TransactionService().totalRecord(countQuery);
         const totalPage = Math.ceil(totalRecord / size);
         
         const data = {
-            data: products,
+            data: transactions,
             pagination: {
                 size: size,
                 page: page,
