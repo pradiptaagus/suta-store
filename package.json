@@ -35,7 +35,7 @@
   "scripts": {
     "start": "node ./dist/server.js",
     "build": "npm run clean-build && tsc && npm run copy-assets",
-    "serve": "nodemon ./src/server.ts",
+    "dev": "nodemon ./src/server.ts",
     "copy-assets": "ts-node src/copy-assets.ts",
     "clean-build": "ts-node src/clean-build.ts"
   }
