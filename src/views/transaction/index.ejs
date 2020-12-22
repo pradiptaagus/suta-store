@@ -11,12 +11,12 @@
     <%- include("../partials/navbar.ejs") -%>
     <div class="container my-5">
         <h1 class="mb-3">Transaksi</h1>
-        <div class="d-sm-flex justify-content-between mb-3">
-            <a href="/cashier" class="btn btn-primary mb-3 mb-sm-0">Tambah transksi</a>
+        <div class="d-flex justify-content-between mb-3">
+            <a href="/cashier" class="btn btn-primary">Tambah transksi</a>
             <button class="btn btn-info ml-md-2" data-toggle="modal" data-target="#reportModal">Download laporan</button>
         </div>
         <div class="row mb-3">
-            <div class="col-md-8 order-2 order-sm-1 mb-3 mb-0-md">
+            <div class="col-md-6 col-lg-8 mb-3 mb-md-0">
                 <form method="get" class="mb-3">
                     <label for="showSize" class="pr-1">Tampilkan per</label>
                     <select class="custom-select" name="showSize" id="showSize" style="width: initial">
@@ -39,7 +39,7 @@
                     </div>
                 </form>
             </div>
-            <form id="search-form" method="get" class="col-md-4 order-1 order-2-sm mb-3 mb-sm-0">
+            <form id="search-form" method="get" class="col-md-6 col-lg-4 align-self-end">
                 <div class="d-flex justify-content-end">
                     <label for="search" class="col-form-label">Cari</label>
                     <input class="form-control mx-2" type="search" name="search" id="search" placeholder="">
