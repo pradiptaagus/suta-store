@@ -270,7 +270,7 @@
                         contentType: "application/json",
                         success: function(result) {
                             const data = result.data;
-                            const options = new Option(`${data.product.name} - ${data.storageType} (tersisa ${data.qty} ${data.unit})`, data.id, true, true);
+                            const options = new Option(`${data.product.code} - ${data.product.name}`, data.id, true, true);
                             $("select[name='name["+index+"]']").append(options).trigger("change");
                         },
                         error: function(error) {
@@ -296,28 +296,13 @@
                     },
                     processResults: function(data) {
                         const pagination = data.data.pagination;
-
-                        function filterData() {
-                            let arr = [];
-                            data.data.data.forEach((item) => {
-                                let exist = 0;
-                                transactionDetails.forEach((transactionDetail) => {
-                                    if (item.id === transactionDetail.id) {
-                                        exist += 1;
-                                    }
-                                });
-                                if (!exist) {
-                                    arr.push({
-                                        text: `${item.product.code} - ${item.product.name}`,
-                                        id: item.id
-                                    });
-                                }
-                            });
-                            return arr;
-                        }
-
                         return {
-                            results: filterData(),
+                            results: $.map(data.data.data, function(item) {
+                                return {
+                                    text: `${item.product.code} - ${item.product.name}`,
+                                    id: item.id
+                                }
+                            }),
                             pagination: {
                                 more: pagination.page * pagination.size < pagination.totalRecord
                             }

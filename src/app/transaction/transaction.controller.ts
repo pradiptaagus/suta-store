@@ -215,9 +215,9 @@ export class TransactionController {
                 productSnapshotErrors[`productSnapshots[${i}].productVariantId`] = "Product variant not found!";
             }
             // Check product variant stock
-            else if (transactionDetail.qty > productVariant.qty) {
-                productSnapshotErrors[`productSnapshots[${i}].qty`] = "Product quantity requested is exceed the limit!";
-            }
+            // else if (transactionDetail.qty > productVariant.qty) {
+            //     productSnapshotErrors[`productSnapshots[${i}].qty`] = "Product quantity requested is exceed the limit!";
+            // }
         }
 
         if (Object.keys(productSnapshotErrors).length > 0) {
@@ -425,9 +425,9 @@ export class TransactionController {
                 productSnapshotErrors[`productSnapshots[${i}].productVariantId`] = "Product variant not found!";
             }
             // Check product variant stock
-            else if (productVariant && !(productVariant.qty > transactionDetail.qty)) {
-                productSnapshotErrors[`productSnapshots[${i}].qty`] = "Product quantity requested is exceed the limit!";
-            }
+            // else if (productVariant && !(productVariant.qty > transactionDetail.qty)) {
+            //     productSnapshotErrors[`productSnapshots[${i}].qty`] = "Product quantity requested is exceed the limit!";
+            // }
         }
 
         if (Object.keys(productSnapshotErrors).length > 0) {
