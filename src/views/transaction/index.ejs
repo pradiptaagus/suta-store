@@ -11,7 +11,14 @@
     <%- include("../partials/navbar.ejs") -%>
     <div class="container my-5">
         <h1 class="mb-3">Transaksi</h1>
-        <a href="/cashier" class="btn btn-primary mb-3">Tambah transksi</a>
+        <div class="row justify-content-between mb-3">
+            <div class="col-12 col-md-6">
+                <a href="/cashier" class="btn btn-primary mb-3 mb-md-0">Tambah transksi</a>
+            </div>
+            <div class="col-12 col-md-6">
+                <button class="btn btn-info ml-md-2 d-flex float-md-right" data-toggle="modal" data-target="#reportModal">Download laporan</button>
+            </div>
+        </div>
         <form action="">
             <div class="form-group">
                 <label for="showSize">Tampilkan per</label>
@@ -42,6 +49,36 @@
             <ul id="pagination" class="pagination"></ul>
         </nav>
     </div>
+
+    <div class="modal fade" id="reportModal" aria-label="exportModal" aria-hidden="true" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="/transaction/report" method="get">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Download laporan</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="startDate">Tanggal awal</label>
+                            <input class="form-control" type="date" name="startDate" id="startDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="endDate">Tanggal awal</label>
+                            <input class="form-control" type="date" name="endDate" id="endDate">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batalkan</button>
+                        <button type="submit" class="btn btn-primary">Download laporan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js"></script>

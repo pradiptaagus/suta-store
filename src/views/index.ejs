@@ -16,36 +16,6 @@
                 <a href="/product" class="btn btn-primary mb-3 mb-md-0 d-flex justify-content-center align-items-center" style="flex: 1; width: 200px; height: 80px">Master data</a>
                 <a href="/transaction" class="btn btn-success ml-md-2 d-flex justify-content-center align-items-center" style="flex: 1; width: 200px; height: 80px">History transaksi</a>
                 <a href="/cashier" class="btn btn-warning ml-md-2 d-flex justify-content-center align-items-center" style="flex: 1; width: 200px; height: 80px" target="_blank">Kasir</a>
-                <button class="btn btn-info ml-md-2 d-flex justify-content-center align-items-center" style="flex: 1; width: 200px; height: 80px" data-toggle="modal" data-target="#reportModal">Download laporan</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="reportModal" aria-label="exportModal" aria-hidden="true" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form action="/transaction/report" method="get">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Download laporan</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label for="startDate">Tanggal awal</label>
-                            <input class="form-control" type="date" name="startDate" id="startDate">
-                        </div>
-                        <div class="form-group">
-                            <label for="endDate">Tanggal awal</label>
-                            <input class="form-control" type="date" name="endDate" id="endDate">
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batalkan</button>
-                        <button type="submit" class="btn btn-primary">Download laporan</button>
-                    </div>
-                </form>
             </div>
         </div>
     </div>
