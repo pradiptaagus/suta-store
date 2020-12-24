@@ -3,9 +3,10 @@ import { TransactionService } from "./transaction.service";
 import { check, validationResult } from "express-validator";
 import { ProductSnapshotDTO } from "../product-snapshot/product-snapshot.dto";
 import { ProductSnapshotService } from "../product-snapshot/product-snapshot.service";
+import { ProductService } from "../product/product.service"
 import validator from "validator";
 import { ProductDetailService } from "../product-detail/product-detail.service";
-import { CountTransactionDTO, FindAllTransactionDTO, ReportTransactionDTO, StoreTransactionDTO, UpdateTransctionDTO } from "./transaction.dto";
+import { CountTransactionDTO, FindAllTransactionDTO, ReportTransactionDTO, StoreTransactionDTO, UpdateTransactionDTO } from "./transaction.dto";
 import { DateValidator } from "../../helpers/date-validator.helper";
 import { ResponseBuilder } from "../../helpers/response-builder.helper";
 import { DateGenerator } from "../../helpers/date-generator.helper";
@@ -214,10 +215,6 @@ export class TransactionController {
             if (!productVariant) {
                 productSnapshotErrors[`productSnapshots[${i}].productVariantId`] = "Product variant not found!";
             }
-            // Check product variant stock
-            // else if (transactionDetail.qty > productVariant.qty) {
-            //     productSnapshotErrors[`productSnapshots[${i}].qty`] = "Product quantity requested is exceed the limit!";
-            // }
         }
 
         if (Object.keys(productSnapshotErrors).length > 0) {
@@ -239,13 +236,21 @@ export class TransactionController {
             return new ResponseBuilder().internalServerError(res);
         }
 
-        // Loop for create new product snapshot and transaction detail
+        /**
+         * Loop productSnapshots array 
+         * to create new product snapshot and transaction detail 
+         */
         let transactionTotal: number = 0;
         for (let i = 0; i < productSnapshots.length; i++) {
             // Get transaction detail item [i] from productSnapshots array
             const transactionDetail = productSnapshots[i];
             
-            // Get product variant from database
+            /**
+             * Get product variant object from database.
+             * Product variant id will be used on product snapshot modification.
+             * If product variant doesn't exist, it's mean there's no desired product variant
+             * and product snapshot modifcation coludn't be done.
+             */
             const productVariant = await new ProductDetailService().findOne(transactionDetail.productVariantId);
             if (!productVariant) continue;
 
@@ -254,7 +259,7 @@ export class TransactionController {
              * If discount is undefined or value is empty, discount value is 0.
              * Otherwise, use discount from request body.
              */
-            let discount = 0;
+            let discount: number = 0;
             if (
                 transactionDetail.discount &&
                 transactionDetail.discount !== undefined
@@ -272,7 +277,7 @@ export class TransactionController {
                     : productVariant.price;
 
             // Calculate total price
-            const subTotal = totalPrice * (+transactionDetail.qty);
+            const subTotal = totalPrice * transactionDetail.qty;
             
             // Add subTotal to transactionTotal
             transactionTotal = transactionTotal + subTotal;
@@ -284,7 +289,7 @@ export class TransactionController {
                 code: productVariant.product.code,
                 name: productVariant.product.name,
                 unit: productVariant.unit,
-                qty: +transactionDetail.qty,
+                qty: transactionDetail.qty,
                 price: productVariant.price,
                 discount: discount,
                 totalPrice: totalPrice,
@@ -297,16 +302,21 @@ export class TransactionController {
                 return new ResponseBuilder().internalServerError(res);
             }
 
-            // Reduce product variant stock
-            const newQuantity = productVariant.qty - transactionDetail.qty;
-            const reduceProductVariantStockResult = new ProductDetailService().updateStock(newQuantity, productVariant.id);
-            if (!reduceProductVariantStockResult) {
+            /** 
+             * Reduce product variant stock
+             * Formulas = product stock - transaction detail stock
+             */
+            const product = await new ProductService().findOne(productVariant.product.id);
+            if (!product) continue;
+            const newQuantity = product.qty - transactionDetail.qty;
+            const reduceProductStockResult = new ProductService().updateStock(newQuantity, product.id);
+            if (!reduceProductStockResult) {
                 return new ResponseBuilder().internalServerError(res);
             }
         }
 
         // Update transaction total
-        const updateBody: UpdateTransctionDTO = {
+        const updateBody: UpdateTransactionDTO = {
             note: body.note,
             date: body.date,
             discount: body.discount,
@@ -424,10 +434,6 @@ export class TransactionController {
             if (!productVariant) {
                 productSnapshotErrors[`productSnapshots[${i}].productVariantId`] = "Product variant not found!";
             }
-            // Check product variant stock
-            // else if (productVariant && !(productVariant.qty > transactionDetail.qty)) {
-            //     productSnapshotErrors[`productSnapshots[${i}].qty`] = "Product quantity requested is exceed the limit!";
-            // }
         }
 
         if (Object.keys(productSnapshotErrors).length > 0) {
@@ -435,7 +441,7 @@ export class TransactionController {
         }
 
         // Create update transaction DTO (Data Transfer Object)
-        const transactionBody: UpdateTransctionDTO = {
+        const transactionBody: UpdateTransactionDTO = {
             note: body.note,
             date: body.date,
             discount: body.discount,
@@ -472,7 +478,7 @@ export class TransactionController {
              * If discount is undefined or value is empty, discount value is 0.
              * Otherwise, use discount from request body.
              */
-            let discount = 0;
+            let discount: number = 0;
             if (
                 transactionDetail.discount &&
                 transactionDetail.discount !== undefined
@@ -502,7 +508,7 @@ export class TransactionController {
                 code: productVariant.product.code,
                 name: productVariant.product.name,
                 unit: productVariant.unit,
-                qty: +transactionDetail.qty,
+                qty: transactionDetail.qty,
                 price: productVariant.price,
                 discount: discount,
                 totalPrice: totalPrice,
@@ -513,16 +519,18 @@ export class TransactionController {
              * Execute this section when transaction detail id and product variant exist.
              * This section goal is to modify product snapshot.
              */
-            if (transactionDetail.id && transactionDetail.id) {
+            if (transactionDetail.id) {
                 /** 
                  * Reduce product variant stock
-                 * New product variant stock = (old product variant stock + old product snapshot stock) - new product snapshot stock
+                 * New product variant stock = (old product stock + old product snapshot stock) - new product snapshot stock
                  */
                 const selectedProductSnapshot = await new ProductSnapshotService().findOne(transactionDetail.id);
-                if (!selectedProductSnapshot) continue;
-                const newQuantity = (productVariant.qty + selectedProductSnapshot.qty) - transactionDetail.qty;
-                const reduceProductVariantStockResult = new ProductDetailService().updateStock(newQuantity, productVariant.id);
-                if (!reduceProductVariantStockResult) {
+                const product = await new ProductService().findOne(productVariant.product.id);
+                if (!product || !selectedProductSnapshot) continue;
+
+                const newQuantity = (product.qty + selectedProductSnapshot.qty) - transactionDetail.qty;
+                const reduceProductStockResult = new ProductService().updateStock(newQuantity, product.id);
+                if (!reduceProductStockResult) {
                     return new ResponseBuilder().internalServerError(res);
                 }
                 
@@ -544,17 +552,22 @@ export class TransactionController {
                     return new ResponseBuilder().internalServerError(res);
                 }
 
-                // Reduce product variant stock
-                const newQuantity = productVariant.qty - transactionDetail.qty;
-                const reduceProductVariantStockResult = new ProductDetailService().updateStock(newQuantity, productVariant.id);
-                if (!reduceProductVariantStockResult) {
+                /** 
+                 * Reduce product variant stock
+                 * Formulas = product stock - transaction detail stock
+                 */
+                const product = await new ProductService().findOne(productVariant.product.id);
+                if (!product) continue;
+                const newQuantity = product.qty - transactionDetail.qty;
+                const reduceProductStockResult = new ProductService().updateStock(newQuantity, product.id);
+                if (!reduceProductStockResult) {
                     return new ResponseBuilder().internalServerError(res);
                 }               
             }
         }
 
         // Update transaction total
-        const updateBody: UpdateTransctionDTO = {
+        const updateBody: UpdateTransactionDTO = {
             note: body.note,
             date: body.date,
             discount: body.discount,
@@ -675,7 +688,6 @@ export class TransactionController {
                         tanggal: transaction.date,
                         kodeProduk: productSnapshot.productVariant.product.code,
                         namaProduk: productSnapshot.name,
-                        lokasiPenyimpanan: productSnapshot.productVariant.storageType === "store" ? "Toko" : "Gudang",
                         jumlahPembelian: productSnapshot.qty,
                         satuan: productSnapshot.productVariant.unit,
                         hargaAwal: productSnapshot.productVariant.price,
@@ -689,7 +701,6 @@ export class TransactionController {
                         tanggal: "",
                         kodeProduk: productSnapshot.productVariant.product.code,
                         namaProduk: productSnapshot.name,
-                        lokasiPenyimpanan: productSnapshot.productVariant.storageType === "store" ? "Toko" : "Gudang",
                         jumlahPembelian: productSnapshot.qty,
                         satuan: productSnapshot.productVariant.unit,
                         hargaAwal: productSnapshot.productVariant.price,

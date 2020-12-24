@@ -20,7 +20,7 @@ export interface StoreTransactionDTO {
     paymentAmount: number;
 }
 
-export interface UpdateTransctionDTO {
+export interface UpdateTransactionDTO {
     date: string;
     note: string;
     discount: number;

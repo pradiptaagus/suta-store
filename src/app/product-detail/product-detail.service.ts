@@ -22,7 +22,8 @@ export class ProductDetailService {
             join: {
                 alias: "productDetail",
                 leftJoin: {
-                    product: "productDetail.product"
+                    product: "productDetail.product",
+                    child: "productDetail.childId"
                 }
             },
             where: whereClause.join(" and ")
@@ -41,7 +42,8 @@ export class ProductDetailService {
             join: {
                 alias: "productDetail",
                 leftJoinAndSelect: {
-                    product: "productDetail.product"
+                    product: "productDetail.product",
+                    child: "productDetail.childId"
                 }
             },
             where: whereClause.join(" and "),
@@ -55,7 +57,8 @@ export class ProductDetailService {
             join: {
                 alias: "productDetail",
                 leftJoinAndSelect: {
-                    product: "productDetail.product"
+                    product: "productDetail.product",
+                    child: "productDetail.childId"
                 }
             }
         });
@@ -63,13 +66,15 @@ export class ProductDetailService {
 
     async store(body: StoreProductDetailDTO): Promise<ProductDetail|undefined> {
         const product = await this.productService.findOne(body.productId)
+        const child = body.childId ? await this.productDetailRepository.findOne(body.childId) : null;
         if (product) {
             const productDetail = new ProductDetail();
             productDetail.product = product;
             productDetail.unit = body.unit;
-            productDetail.qty = body.qty;
+            productDetail.qtyPerUnit = body.qtyPerUnit;
             productDetail.price = body.price;
-            productDetail.storageType = body.storageType;
+            productDetail.isParent = body.isParent ? true : false;
+            if (child) productDetail.childId = child;
             const result = await this.productDetailRepository.save(productDetail);
             return result;
         }        
@@ -78,22 +83,14 @@ export class ProductDetailService {
     async update(body: UpdateProductDetailDTO, id: string): Promise<ProductDetail | undefined> {
         const productDetail = await this.productDetailRepository.findOne(id);
         const product = await this.productService.findOne(body.productId);
-
+        const child = body.childId ? await this.productDetailRepository.findOne(body.childId) : null;
         if (productDetail && product) {
             productDetail.product = product;
             productDetail.unit = body.unit;
-            productDetail.qty = body.qty;
+            productDetail.qtyPerUnit = body.qtyPerUnit;
             productDetail.price = body.price;
-            productDetail.storageType = body.storageType;
-            const result = await this.productDetailRepository.save(productDetail);
-            return result;
-        }
-    }
-
-    async updateStock(qty: number, id: string) {
-        const productDetail = await this.productDetailRepository.findOne(id);
-        if (productDetail) {
-            productDetail.qty = qty;
+            productDetail.isParent = +body.isParent ? true : false;
+            productDetail.childId = child ? child : null;
             const result = await this.productDetailRepository.save(productDetail);
             return result;
         }

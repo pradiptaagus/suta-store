@@ -57,17 +57,24 @@ export class ProductController {
     async findAll(req: Request, res: Response, next: NextFunction) {
         const size = req.query?.size ? +req.query.size : 10;
         const page = req.query?.page ? +req.query.page : 1;
+        const storageType = req.query.storageType ? (
+            req.query.storageType === "store" ? "store" : (
+                req.query.storageType === "warehouse" ? "warehouse" : ""
+                )
+            ) : "";
         
         const query: FindAllProductDTO = {
             code: req.query?.code?.toString(),
             name: req.query?.name?.toString(),
             size: size, 
-            page: page
+            page: page,
+            storageType: storageType
         }
 
         const countQuery: CountProductDto = {
             code: req.query?.code?.toString(),
-            name: req.query?.name?.toString()
+            name: req.query?.name?.toString(),
+            storageType: storageType
         }
 
         const products = await new ProductService().findAll(query);
@@ -113,11 +120,14 @@ export class ProductController {
         const body: {
             name: string,
             code: string,
+            storageType: string,
+            qty: number,
             productVariants: {
-                qty: number,
+                qtyPerUnit: number,
                 price: number,
-                storageType: string,
-                unit: string
+                unit: string,
+                isParent: boolean,
+                childIndex: number
             }[]
         } = req.body;
 
@@ -133,19 +143,27 @@ export class ProductController {
             })
             .run(req);
         await check("name").notEmpty().withMessage("Name field is required!").run(req);
+        await check("storageType")
+            .notEmpty().bail().withMessage("Storage type field is required!")
+            .isIn(['store', 'warehouse']).withMessage("Product storage type field value must be store or warehouse!")
+            .run(req);
+        await check("qty")
+            .notEmpty().bail().withMessage("Quantity field is required!")
+            .isNumeric().withMessage("Quantity field value should be number!")
+            .run(req);
         await check("productVariants").notEmpty().withMessage("Product variants is required!").run(req);
         await check("productVariants.*.unit").notEmpty().withMessage("Product unit field is required!").run(req);
-        await check("productVariants.*.qty")
-            .notEmpty().bail().withMessage("Product quantity field is required!")
-            .isNumeric().withMessage("Product qiantity field value should be number")
+        await check("productVariants.*.qtyPerUnit")
+            .notEmpty().bail().withMessage("Product quantity per unit field is required!")
+            .isNumeric().withMessage("Product qiantity per unit field value should be number")
             .run(req);
         await check("productVariants.*.price")
             .notEmpty().bail().withMessage("Product price field is required!")
             .isNumeric().withMessage("Product price field value should be number")
-            .run(req)
-        await check("productVariants.*.storageType")
-            .notEmpty().bail().withMessage("Product storage type field is required!")
-            .isIn(['store', 'warehouse']).withMessage("Product storage type field value must be store or warehouse!")
+            .run(req);
+        await check("productVariants.*.isParent")
+            .notEmpty().bail().withMessage("Is parent field is required!")
+            .isIn([0, 1]).withMessage("Is parent field value is not valid!")
             .run(req);
 
         const errors = validationResult(req);
@@ -162,6 +180,8 @@ export class ProductController {
         const productBody: StoreProductDTO = {
             code: body.code,
             name: body.name,
+            storageType: body.storageType,
+            qty: body.qty
         }
 
         // Store product
@@ -170,22 +190,51 @@ export class ProductController {
             return new ResponseBuilder().internalServerError(res);
         }
 
-        // Loop for create product variant
+        /**
+         * Create temporary array to save store product variant result.
+         * It's used to fill childId
+         */
+        let productVariantsTemp: {
+            index: number,
+            productVariantId: string
+        }[] = [];
+
+        // Loop to create product variant
         const productVariants = body.productVariants;
         for (let i = 0; i < productVariants.length; i++) {
             // Store product variant body
             const productVariantBody: StoreProductDetailDTO = {
                 productId: product.id,
-                qty: productVariants[i].qty,
+                qtyPerUnit: productVariants[i].qtyPerUnit,
                 price: productVariants[i].price,
-                storageType: productVariants[i].storageType,
-                unit: productVariants[i].unit
+                unit: productVariants[i].unit,
+                isParent: productVariants[i].isParent
             };
+            
             const storeProductVariantResult = await new ProductDetailService().store(productVariantBody);
             if (!storeProductVariantResult) {
                 return new ResponseBuilder().internalServerError(res);
             }
 
+            // Add storeProductVariantResult to productVariantsTemp
+            productVariantsTemp.push({
+                index: i,
+                productVariantId: storeProductVariantResult.id
+            });
+        }
+
+        // Loop for assign child
+        for (let i = 0; i < productVariantsTemp.length; i++) {
+            const productVariantBody: UpdateProductDetailDTO = {
+                productId: product.id,
+                qtyPerUnit: productVariants[i].qtyPerUnit,
+                price: productVariants[i].price,
+                unit: productVariants[i].unit,
+                isParent: productVariants[i].isParent,
+                childId: productVariants[i].childIndex ? productVariantsTemp[(+productVariants[i].childIndex) - 1].productVariantId : ""
+            }
+
+            const updateProductVariantResult = await new ProductDetailService().update(productVariantBody, productVariantsTemp[i].productVariantId);
         }
 
         const data = await new ProductService().findOne(product.id)
@@ -197,13 +246,15 @@ export class ProductController {
         const body: {
             name: string,
             code: string,
+            storageType: string,
+            qty: number,
             productVariants: {
                 id: string,
-                qty: number,
-                price: number,
-                storageType: string,
+                qtyPerUnit: number,
+                price: number,                
                 unit: string,
-                productId: string
+                isParent: boolean,
+                childIndex: number
             }[]
         } = req.body;
 
@@ -234,19 +285,27 @@ export class ProductController {
             })
             .run(req);
         await check("name").notEmpty().withMessage("Name field is required!").run(req);
+        await check("storageType")
+            .notEmpty().bail().withMessage("Storage type field is required!")
+            .isIn(['store', 'warehouse']).withMessage("Storage type field value must be store or warehouse!")
+            .run(req);
+        await check("qty")
+            .notEmpty().bail().withMessage("Quantity field is required!")
+            .isNumeric().withMessage("Quantity field value should be number!")
+            .run(req);
         await check("productVariants").notEmpty().withMessage("Product variants is required!").run(req);
         await check("productVariants.*.unit").notEmpty().withMessage("Product unit field is required!").run(req);
-        await check("productVariants.*.qty")
-            .notEmpty().bail().withMessage("Product quantity field is required!")
-            .isNumeric().withMessage("Product qiantity field value should be number")
+        await check("productVariants.*.qtyPerUnit")
+            .notEmpty().bail().withMessage("Product quantity per unit field is required!")
+            .isNumeric().withMessage("Product qiantity per unit field value should be number")
             .run(req);
         await check("productVariants.*.price")
             .notEmpty().bail().withMessage("Product price field is required!")
             .isNumeric().withMessage("Product price field value should be number")
             .run(req)
-        await check("productVariants.*.storageType")
-            .notEmpty().bail().withMessage("Product storage type field is required!")
-            .isIn(['store', 'warehouse']).withMessage("Product storage type field value must be store or warehouse!")
+        await check("productVariants.*.isParent")
+            .notEmpty().bail().withMessage("Is parent field is required!")
+            .isIn([0, 1]).withMessage("Is parent field value is not valid!")
             .run(req);
 
         const errors = validationResult(req);
@@ -263,6 +322,8 @@ export class ProductController {
         const productBody: UpdateProductDTO = {
             code: body.code,
             name: body.name,
+            storageType: body.storageType,
+            qty: body.qty
         }
 
         // Update product
@@ -272,42 +333,76 @@ export class ProductController {
         }
 
         /**
-         * Loop productVariants array
-         * To update product detail
+         * Create temporary array to save store product variant result.
+         * It's used to fill childId
          */
-        const productVariants = body.productVariants;    
+        let productVariantsTemp: {
+            index: number,
+            productVariantId: string
+        }[] = [];
+
+        /**
+         * Loop productVariants array
+         * To perform create or update product detail
+         */
+        const productVariants = body.productVariants;
         for (let i = 0; i < productVariants.length; i++) {
             const productVariantId = productVariants[i].id;
 
             if (!productVariantId) {
-                const prodVar: StoreProductDetailDTO = {
+                // Store product detail
+                const productVariantBody: StoreProductDetailDTO = {
                     productId: product.id,
-                    qty: productVariants[i].qty,
+                    qtyPerUnit: productVariants[i].qtyPerUnit,
                     price: productVariants[i].price,
                     unit: productVariants[i].unit,
-                    storageType: productVariants[i].storageType
+                    isParent: productVariants[i].isParent
                 }
-                const storeProductDetailResult = await new ProductDetailService().store(prodVar);
-                if (!storeProductDetailResult) {
+                const storeProductVariantResult = await new ProductDetailService().store(productVariantBody);
+                if (!storeProductVariantResult) {
                     return new ResponseBuilder().internalServerError(res);
                 }
+                // Add storeProductVariantResult to productVariantsTemp
+                productVariantsTemp.push({
+                    index: i,
+                    productVariantId: storeProductVariantResult.id
+                });
             } else if (productVariantId) {
+                // Update product detail
                 const productVariant = await new ProductDetailService().findOne(productVariantId);
-                
-                if (productVariant) {
-                    const prodVar: UpdateProductDetailDTO = {
-                        productId: product.id,
-                        qty: productVariants[i].qty,
-                        price: productVariants[i].price,
-                        unit: productVariants[i].unit,
-                        storageType: productVariants[i].storageType
-                    };
-                    const updateProductDetailResult = await new ProductDetailService().update(prodVar, productVariantId);
-                    if (!updateProductDetailResult) {
-                        return new ResponseBuilder().internalServerError(res);
-                    }
+                if (!productVariant) continue;
+                const productVariantBody: UpdateProductDetailDTO = {
+                    productId: product.id,
+                    qtyPerUnit: productVariants[i].qtyPerUnit,
+                    price: productVariants[i].price,
+                    unit: productVariants[i].unit,
+                    isParent: productVariants[i].isParent
+                };
+
+                const updateProductVariantResult = await new ProductDetailService().update(productVariantBody, productVariantId);
+                if (!updateProductVariantResult) {
+                    return new ResponseBuilder().internalServerError(res);
                 }
+
+                // Add storeProductVariantResult to productVariantsTemp
+                productVariantsTemp.push({
+                    index: i,
+                    productVariantId: updateProductVariantResult.id
+                });
             }
+        }
+
+        // Loop for assign child
+        for (let i = 0; i < productVariantsTemp.length; i++) {
+            const updateProductVariantBody: UpdateProductDetailDTO = {
+                productId: product.id,
+                qtyPerUnit: productVariants[i].qtyPerUnit,
+                price: productVariants[i].price,
+                unit: productVariants[i].unit,
+                isParent: productVariants[i].isParent,
+                childId: productVariants[i].childIndex ? productVariantsTemp[(+productVariants[i].childIndex) - 1].productVariantId : ""
+            }
+            const updateProductVariantResult = await new ProductDetailService().update(updateProductVariantBody, productVariantsTemp[i].productVariantId);
         }
         
         const data = await new ProductService().findOne(product.id);

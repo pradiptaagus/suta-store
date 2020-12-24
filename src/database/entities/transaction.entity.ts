@@ -9,7 +9,7 @@ export class Transaction {
     @Column({type: "text", nullable: true})
     note!: string;
 
-    @Column({type: "date"})
+    @Column({type: "date", nullable: true})
     date!: string;
 
     @Column({type: "int", nullable: true})

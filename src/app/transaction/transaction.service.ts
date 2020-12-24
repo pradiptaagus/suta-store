@@ -1,6 +1,6 @@
 import { Between, getConnection, Like, Raw, Repository } from "typeorm";
 import { Transaction } from "../../database/entities/transaction.entity";
-import { CountTransactionDTO, FindAllTransactionDTO, StoreTransactionDTO, UpdateTransctionDTO, ReportTransactionDTO } from "./transaction.dto";
+import { CountTransactionDTO, FindAllTransactionDTO, StoreTransactionDTO, UpdateTransactionDTO, ReportTransactionDTO } from "./transaction.dto";
 import { DateGenerator } from "../../helpers/date-generator.helper";
 
 export class TransactionService {
@@ -85,7 +85,7 @@ export class TransactionService {
         return result;
     }
 
-    async update(body: UpdateTransctionDTO, id: string): Promise<Transaction|false> {
+    async update(body: UpdateTransactionDTO, id: string): Promise<Transaction|false> {
         const transaction = await this.transactionRepository.findOne(id);
         if (!transaction) return false;
 

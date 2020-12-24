@@ -1,11 +1,6 @@
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, Timestamp, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, Timestamp, UpdateDateColumn, OneToOne, JoinColumn } from "typeorm";
 import { ProductSnapshot } from "./product-snapshot.entity";
 import { Product } from "./product.entity";
-
-export enum storageType {
-    STORE = "store",
-    WAREHOUSE = "warehouse"
-}
 
 @Entity({name: "product_details"})
 export class ProductDetail {
@@ -15,17 +10,21 @@ export class ProductDetail {
     @ManyToOne(() => Product, product => product.productVariant)
     product!: Product;
 
-    @Column({type: "varchar", length: 20})
+    @Column({type: "varchar", length: 20, nullable: true})
     unit!: string;
 
-    @Column({type: "int"})
-    qty!: number;
+    @Column({type: "int", nullable: true})
+    qtyPerUnit!: number;
 
-    @Column({type: "int"})
+    @Column({type: "int", nullable: true})
     price!: number;
 
-    @Column({type: "enum", enum: storageType, default: storageType.STORE})
-    storageType!: string; 
+    @Column({type: "boolean", nullable: true})
+    isParent!: boolean;
+
+    @OneToOne(() => ProductDetail)
+    @JoinColumn({name: "childId"})
+    childId!: ProductDetail|null;
 
     @CreateDateColumn()
     createdAt!: string;

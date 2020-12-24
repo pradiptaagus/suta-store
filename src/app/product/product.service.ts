@@ -12,16 +12,19 @@ export class ProductService {
     async totalRecord(query: CountProductDto) {
         const code = query.code;
         const name = query.name;
+        const storageType = query.storageType;
 
         const whereClause: object[] = [];
         if (code) whereClause.push({code: Like(`%${code}%`)});
         if (name) whereClause.push({name: Like(`%${name}%`)});
+        if (storageType) whereClause.push({storageType: Like(`%${storageType}%`)});
 
         return await this.productRepository.count({
             join: {
                 alias: "product",
                 leftJoin: {
-                    productVariant: "product.productVariant"
+                    productVariant: "product.productVariant",
+                    child: "productVariant.childId"
                 }
             },
             where: whereClause
@@ -33,16 +36,19 @@ export class ProductService {
         const skip = query.page ? (query.page - 1) * take : 0;
         const code = query.code;
         const name = query.name;
+        const storageType = query.storageType;
 
         const whereClause: object[] = [];
         if (code) whereClause.push({code: Like(`%${code}%`)});
         if (name) whereClause.push({name: Like(`%${name}%`)});
+        if (storageType) whereClause.push({storageType: Like(`%${storageType}%`)});
 
         return await this.productRepository.find({
             join: {
                 alias: "product",
                 leftJoinAndSelect: {
-                    productVariant: "product.productVariant"
+                    productVariant: "product.productVariant",
+                    child: "productVariant.childId"
                 }
             },
             where: whereClause,
@@ -59,7 +65,8 @@ export class ProductService {
             join: {
                 alias: "product",
                 leftJoinAndSelect: {
-                    productVariant: "product.productVariant"
+                    productVariant: "product.productVariant",
+                    child: "productVariant.childId"
                 }
             }
         });
@@ -69,6 +76,8 @@ export class ProductService {
         const product = new Product();
         product.code = body.code;
         product.name = body.name;
+        product.storageType = body.storageType;
+        product.qty = body.qty;
         const result = await this.productRepository.save(product);
         return result;
     }
@@ -79,6 +88,17 @@ export class ProductService {
         if (product) {
             product.code = body.code;
             product.name = body.name;
+            product.storageType = body.storageType;
+            product.qty = body.qty;
+            const result = await this.productRepository.save(product);
+            return result;
+        }
+    }
+
+    async updateStock(stock: number, id: string): Promise<Product | undefined> {
+        const product = await this.productRepository.findOne(id);
+        if (product) {
+            product.qty = stock
             const result = await this.productRepository.save(product);
             return result;
         }

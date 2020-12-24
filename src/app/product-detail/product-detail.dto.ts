@@ -11,15 +11,17 @@ export interface CountProductDetailDto {
 export interface StoreProductDetailDTO {
     productId: string;
     unit: string;
-    qty: number;
+    qtyPerUnit: number;
     price: number;
-    storageType: string;
+    isParent: boolean;
+    childId?: string;
 }
 
 export interface UpdateProductDetailDTO {
     productId: string;
     unit: string;
-    qty: number;
+    qtyPerUnit: number;
     price: number;
-    storageType: string;
+    isParent: boolean;
+    childId?: string;
 }
