@@ -69,7 +69,7 @@
                     <div class="d-flex mb-3">
                         <div class="pt-2" style="width: 150px">Diskon (IDR)</div>
                         <div class="w-100">
-                            <input type="text" class="form-control" name="discount" id="discount" value="0" style="width: 150px;" onkeyup="handleChangeTransactionDiscount(this)">
+                            <input type="text" class="form-control" name="discount" id="discount" value="0" data-numberonly="true" data-moneyformat="true" style="width: 150px;" onkeyup="handleChangeTransactionDiscount(this)">
                         </div>
                     </div>
                     <div class="d-flex">
@@ -85,7 +85,7 @@
                     <div class="d-flex mb-3">
                         <div class="pt-2" style="width: 150px;">Bayar</div>
                         <div class="w-100">
-                            <input type="text" name="amount" id="amount" class="form-control" data-type="currency" style="width: 200px;" onkeyup="handleChangePaymentAmount(this)">
+                            <input type="text" name="amount" id="amount" class="form-control" value="0" data-numberonly="true" data-moneyformat="true" style="width: 200px;" onkeyup="handleChangePaymentAmount(this)">
                         </div>
                     </div>
                     <div class="d-flex">
@@ -125,6 +125,7 @@
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-beta.1/dist/js/select2.min.js"></script>
+    <script src="/js/helper.js"></script>
     <script>
         let transactionDetails = [];
         let transactionTotal = 0;
@@ -141,6 +142,7 @@
             renderGrandTotal();
             renderCashBackAmount();
             initSave();
+            initMoneyFormat();
         });
 
         function closePrintStruckModal() {
@@ -226,15 +228,7 @@
                             '<div class="invalid-feedback" id="nameError-'+index+'"></div> '+
                         '</td>'+
                         '<td>'+
-                            '<span id="price-'+index+'">'+
-                                (
-                                    new Intl.NumberFormat("en-US", {
-                                        style: "currency",
-                                        currency: "IDR"
-                                    }).format(transactionDetail.price)
-                                ) +
-                                '/' +
-                                (transactionDetail.unit || "unit") +
+                            '<span id="price-'+index+'">'+ rupiahFormat(transactionDetail.price) + '/' + (transactionDetail.unit || "unit") +
                             '</span></td>'+
                         '<td>'+
                             '<div class="d-flex">'+
@@ -245,17 +239,11 @@
                             '<div class="invalid-feedback" id="qtyError-'+index+'"></div>'+
                         '</td>'+
                         '<td>'+
-                            '<input class="form-control form-control-sm" type="text" name="discount['+index+']" id="discount['+index+']" value="'+transactionDetail.discount+'" data-key="discount" data-index="'+index+'" data-numberonly="true" onkeyup="handleChangeTransactionDetailDiscount(this)" style="width: 120px;">'+
+                            '<input class="form-control form-control-sm" type="text" name="discount['+index+']" id="discount['+index+']" value="'+transactionDetail.discount+'" data-key="discount" data-index="'+index+'" data-numberonly="true" data-moneyformat="true" onkeyup="handleChangeTransactionDetailDiscount(this)" style="width: 120px;">'+
                             '<div class="invalid-feedback" id="discountError"></div>'+
                         '</td>'+
                         '<td class="border-right-0">' +
-                            '<span id="subTotal-'+index+'">'+
-                                (
-                                    new Intl.NumberFormat("en-US", {
-                                        style: "currency", currency: "IDR"
-                                    }).format(transactionDetail.subTotal)                                    
-                                ) +
-                            '</span>' +
+                            '<span id="subTotal-'+index+'">'+rupiahFormat(transactionDetail.subTotal)+'</span>' +
                         '</td>'+
                         '<td class="text-center">'+
                             '<button class="btn btn-danger btn-sm removeTransactionItemBtn" data-index="'+index+'">Hapus</button>' +    
@@ -323,6 +311,7 @@
             quantityHandler();
             initAddTransactionItem();
             initDeleteTransactionItem();
+            initMoneyFormat();
         }
 
         function handleChangeProductName(e) {
@@ -344,10 +333,7 @@
                     transactionDetails[index]["product"]["name"] = result.data.product.name;
 
                     $("#code-"+index).text(result.data.product.code);
-                    $("#price-"+index).text(new Intl.NumberFormat("en-US", {
-                        style: "currency",
-                        currency: "IDR"
-                    }).format(result.data.price) + "/" + result.data.unit);
+                    $("#price-"+index).text(rupiahFormat(result.data.price) + "/" + result.data.unit);
 
                     // Calculate and render sub total
                     transactionDetails[index].subTotal = calculateSubTotal(transactionDetails[index].price, transactionDetails[index].discount, transactionDetails[index].qty);
@@ -372,21 +358,7 @@
         }
 
         function renderSubTotal(index, subTotal) {
-            $("#subTotal-"+index).text(
-                new Intl.NumberFormat("en-US", {
-                    style: "currency", currency: "IDR"
-                }).format(subTotal)
-            );
-        }
-
-        function initAllowNumberOnly() {
-            $("*[data-numberonly=true]").on("keypress", function(e) {
-                const ASCIICode = e.which ? e.which : e.keyCode;
-                if (ASCIICode > 31 && (ASCIICode < 48 || ASCIICode > 57)) {
-                    return false;
-                }
-                return true;
-            });
+            $("#subTotal-"+index).text(rupiahFormat(subTotal));
         }
 
         function quantityHandler() {
@@ -462,27 +434,22 @@
         }
 
         function renderTransactionTotal() {
-            $("#transactionTotal").text(new Intl.NumberFormat("en-US", {
-                style: "currency", currency: "IDR"
-            }).format(transactionTotal));
+            $("#transactionTotal").text(rupiahFormat(transactionTotal));
         }
 
         function calculateGrandTotal() {
-            return parseInt(transactionTotal || 0) - parseInt(transactionDiscount || 0);
+            const result = parseInt(transactionTotal || 0) - parseInt(transactionDiscount || 0);
+            return result < 0 ? 0 : result;
         }
 
         function renderGrandTotal() {
-            $("#grandTotal").text(new Intl.NumberFormat("en-US", {
-                style: "currency", currency: "IDR"
-            }).format(grandTransactionTotal));
+            $("#grandTotal").text(rupiahFormat(grandTransactionTotal));
 
             renderGrandPaymentAmount();
         }
 
         function renderGrandPaymentAmount() {
-            $("#paymentAmount").text(new Intl.NumberFormat("en-US", {
-                    style: "currency", currency: "IDR"
-            }).format(grandTransactionTotal));
+            $("#paymentAmount").text(rupiahFormat(grandTransactionTotal));
         }
 
         function calculateCashBackAmount() {
@@ -495,9 +462,7 @@
 
         function renderCashBackAmount() {
             const el = $("#cashBackAmount");
-            el.text(new Intl.NumberFormat("en-US", {
-                style: "currency", currency: "IDR"
-            }).format(cashBackAmount));
+            el.text(rupiahFormat(cashBackAmount));
             
             if (cashBackAmount < 0) {
                 el.addClass("text-danger");
@@ -517,6 +482,7 @@
 
         function handleChangePaymentAmount(e) {
             paymentAmount = $(e).val();
+            paymentAmount = paymentAmount.replace(/,/g, "");
             if (paymentAmount && paymentAmount > 0) {
                 cashBackAmount = calculateCashBackAmount();
                 renderCashBackAmount();

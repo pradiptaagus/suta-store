@@ -79,7 +79,7 @@
                             '<div class="form-group row">' +
                                 '<label for="price['+index+']" class="col-md-5 col-form-label">Harga (Rp)</label>' +
                                 '<div class="col-md-7">' +
-                                    '<input class="form-control input-money" type="text" name="price['+index+']" id="price['+index+']" placeholder="Contoh: 10000" value="'+productVariant.price+'" data-key="price" data-index="'+index+'" data-numberonly="true" onchange="onChangeProductVariantInput(this)">' +
+                                    '<input class="form-control input-money" type="text" name="price['+index+']" id="price['+index+']" placeholder="Contoh: 10000" value="'+productVariant.price+'" data-key="price" data-index="'+index+'" data-numberonly="true" data-moneyformat="true" onchange="onChangeProductVariantInput(this)">' +
                                     '<div class="invalid-feedback" id="priceError-'+index+'"></div>' +
                                 '</div>' +
                             '</div>' +
@@ -128,6 +128,7 @@
             renderAddVariant();
             initDeleteProductVariant();
             initAllowNumberOnly();
+            initMoneyFormat();
         }
 
         function renderAddVariant() {
@@ -181,6 +182,13 @@
         function initSave() {
             $("form").submit(function(e) {
                 e.preventDefault();
+                let productVariants = [];
+                for (let i = 0; i < productVariantData.length; i++) {
+                    productVariants.push({
+                        ...productVariantData[i],
+                        price: productVariantData[i].price.replace(/,/g, "")
+                    });
+                }
 
                 $.ajax({
                     method: "post",
@@ -191,7 +199,7 @@
                         storageType: $("#storageType").val(),
                         qty: $("#qty").val(),
                         storageType: $("#storageType").val(),
-                        productVariants: productVariantData
+                        productVariants: productVariants
                     },
                     success: function(result) {
                         alert("Data tersimpan");

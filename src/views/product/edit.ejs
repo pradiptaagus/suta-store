@@ -173,7 +173,7 @@
                             '<div class="form-group row">' +
                                 '<label for="price" class="col-md-5 col-form-label">Harga (Rp)</label>' +
                                 '<div class="col-md-7">' +
-                                    '<input class="form-control" type="text" name="price['+index+']" id="price['+index+']" placeholder="Contoh: 10000" value="'+productVariant.price+'" data-key="price" data-index="'+index+'" data-numberonly="true" onchange="onChangeProductVariantInput(this)">' +
+                                    '<input class="form-control" type="text" name="price['+index+']" id="price['+index+']" placeholder="Contoh: 10000" value="'+moneyFormat(productVariant.price)+'" data-key="price" data-index="'+index+'" data-numberonly="true" data-moneyformat="true" onchange="onChangeProductVariantInput(this)">' +
                                     '<div class="invalid-feedback" id="priceError-'+index+'"></div>' +
                                 '</div>' +
                             '</div>' +
@@ -222,6 +222,7 @@
             renderAddVariant();
             initShowDeleteProductVariantDialog();
             initAllowNumberOnly();
+            initMoneyFormat();
         }
 
         function renderAddVariant() {
@@ -291,6 +292,13 @@
         function initSaveUpdate() {
             $("form").submit(function(e) {
                 e.preventDefault();
+                let productVariants = [];
+                for (let i = 0; i < productVariantData.length; i++) {
+                    productVariants.push({
+                        ...productVariantData[i],
+                        price: productVariantData[i].price.replace(/,/g, "")
+                    });
+                }
                 
                 $.ajax({
                     method: "put",
@@ -301,7 +309,7 @@
                         storageType: $("#storageType").val(),
                         qty: $("#qty").val(),
                         storageType: $("#storageType").val(),
-                        productVariants: productVariantData
+                        productVariants: productVariants
                     },
                     success: function(result) {
                         $("input").removeClass("is-invalid");
