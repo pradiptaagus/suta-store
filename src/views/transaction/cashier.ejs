@@ -19,20 +19,20 @@
                         <label for="date" class="col-12 col-md-3 col-form-label">Tanggal</label>
                         <div class="col-md-9">
                             <input class="form-control" type="date" name="date" id="date" style="width: initial;">
-                            <div class="invalid-feedback" id="dateError"></div>
+                            <div class="invalid-feedback" id="date-error"></div>
                         </div>
                     </div>
                     <div class="form-group mb-0 row">
                         <label for="note" class="col-12 col-md-3 col-form-label">Catatan</label>
                         <div class="col-md-9">
                             <textarea class="form-control" name="note" id="note" rows="3"></textarea>
-                            <div class="invalid-feedback" id="noteError"></div>
+                            <div class="invalid-feedback" id="note-error"></div>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col">
-                <div class="text-right d-flex justify-content-between bg-dark text-white h-100 px-2 py-3 rounded flex-wrap">
+                <div class="text-right d-flex justify-content-between bg-dark text-white h-100 p-3 rounded flex-wrap">
                     <div class="text-danger" style="font-size: 2rem">Bayar</div>
                     <div style="font-size: 5rem; line-height: initial;">
                         <span id="paymentAmount"></span>
@@ -44,11 +44,13 @@
             <table class="table table-bordered mb-0">
                 <thead>
                     <tr>
-                        <th class="border-top-0 border-left-0" style="width: 200px;">Kode</th>
+                        <th class="border-top-0 border-left-0" style="width: 150px;">Kode</th>
                         <th class="border-top-0">Nama produk</th>
+                        <th class="border-top-0" style="width: 120px;">Varian</th>
                         <th class="border-top-0" style="width: 200px;">Harga satuan</th>
                         <th class="border-top-0" style="width: 100px">Banyak</th>
                         <th class="border-top-0" style="width: 150px">Diskon (IDR)</th>
+                        <th class="border-top-0" style="width: 160px;">Harga akhir (IDR)</th>
                         <th class="border-top-0" style="width: 200px;">Total</th>
                         <th class="border-top-0 border-right-0 text-center" style="width: 85px">Aksi</th>
                     </tr>
@@ -162,17 +164,16 @@
         function addTransactionItem() {
             transactionDetails.push({
                 id: null,
-				unit: null,
+                code: null,
+                name: null,
                 qty: 1,
-                availableQty: 1,
-				price: 0,
-                storageType: null,
                 discount: 0,
+                givenPrice: 0,
                 subTotal: 0,
-				product: {
+				productVariant: {
 					id: null,
-					code: null,
-					name: null,
+					unit: null,
+                    price: 0
 				}
             });
         }
@@ -219,29 +220,38 @@
                     '<tr>'+
                         '<td class="border-left-0">'+
                             '<span id="code-'+index+'">'+
-                                (transactionDetail.product.code || "-") +
+                                (transactionDetail.code || "-") +
                             '</span>'+
                         '</td>'+
                         '<td>'+
                             '<select class="custom-select" name="name['+index+']" id="name['+index+']" data-key="name" data-index="'+index+'" onchange="handleChangeProductName(this)">'+
                             '</select>'+
-                            '<div class="invalid-feedback" id="nameError-'+index+'"></div> '+
+                            '<div class="invalid-feedback" id="name-error-'+index+'"></div> '+
                         '</td>'+
                         '<td>'+
-                            '<span id="price-'+index+'">'+ rupiahFormat(transactionDetail.price) + '/' + (transactionDetail.unit || "unit") +
+                            '<select class="custom-select" name="variant['+index+']" id="variant['+index+']" data-key="variant" data-index="'+index+'" onchange="handleChangeProductVariant(this)">'+
+                            '</select>'+
+                            '<div class="invalid-feedback" id="varian-error-'+index+'"></div> '+
+                        '</td>'+
+                        '<td>'+
+                            '<span id="price-'+index+'">'+ rupiahFormat(transactionDetail.productVariant.price) + '/' + (transactionDetail.unit || "unit") +
                             '</span></td>'+
                         '<td>'+
                             '<div class="d-flex">'+
-                                '<div name="decreaseQty" data-index="'+index+'" class="btn btn-sm btn-primary" style="width: 30px; border-top-right-radius: 0; border-bottom-right-radius: 0">-</div>'+
+                                '<div name="decrease-qty" data-index="'+index+'" class="btn btn-sm btn-primary" style="width: 30px; border-top-right-radius: 0; border-bottom-right-radius: 0">-</div>'+
                                 '<input class="form-control form-control-sm rounded-0 text-center" type="text" name="qty['+index+']" id="qty['+index+']" value="'+transactionDetail.qty+'" data-key="qty" data-index="'+index+'" data-numberonly="true" style="width: 50px;">'+
-                                '<div name="increaseQty" data-index="'+index+'" class="btn btn-sm btn-primary" style="width: 30px; border-top-left-radius: 0; border-bottom-left-radius: 0">+</div>'+
+                                '<div name="increase-qty" data-index="'+index+'" class="btn btn-sm btn-primary" style="width: 30px; border-top-left-radius: 0; border-bottom-left-radius: 0">+</div>'+
                             '</div>'+
-                            '<div class="invalid-feedback" id="qtyError-'+index+'"></div>'+
+                            '<div class="invalid-feedback" id="qty-error-'+index+'"></div>'+
                         '</td>'+
                         '<td>'+
-                            '<input class="form-control form-control-sm" type="text" name="discount['+index+']" id="discount['+index+']" value="'+transactionDetail.discount+'" data-key="discount" data-index="'+index+'" data-numberonly="true" data-moneyformat="true" onkeyup="handleChangeTransactionDetailDiscount(this)" style="width: 120px;">'+
-                            '<div class="invalid-feedback" id="discountError"></div>'+
+                            '<input class="form-control form-control-sm" type="text" name="discount['+index+']" id="discount['+index+']" value="'+(moneyFormat(transactionDetail.discount))+'" data-key="discount" data-index="'+index+'" data-numberonly="true" data-moneyformat="true" onkeyup="handleChangeTransactionDetailDiscount(this)" style="width: 120px;">'+
+                            '<div class="invalid-feedback" id="discount-error"></div>'+
                         '</td>'+
+                        '<td>' +
+                            '<input class="form-control form-control-sm" type="text" name="given-price['+index+']" id="given-price['+index+']" value="'+(moneyFormat(transactionDetail.givenPrice))+'" data-key="givenPrice" data-index="'+index+'" data-numberonly="true" data-moneyformat="true" style="width: 130px;" onkeyup="handleChangeProductPrice(this)">'+
+                            '<div class="invalid-feedback" id="given-price-error"></div>'+
+                        '</td>' +
                         '<td class="border-right-0">' +
                             '<span id="subTotal-'+index+'">'+rupiahFormat(transactionDetail.subTotal)+'</span>' +
                         '</td>'+
@@ -254,11 +264,11 @@
                 if (transactionDetail.id) {
                     $.ajax({
                         method: "get",
-                        url: "/api/product-detail/" + transactionDetail.id,
+                        url: "/api/product/" + transactionDetail.id,
                         contentType: "application/json",
                         success: function(result) {
                             const data = result.data;
-                            const options = new Option(`${data.product.code} - ${data.product.name}`, data.id, true, true);
+                            const options = new Option(`${data.code} - ${data.name}`, data.id, true, true);
                             $("select[name='name["+index+"]']").append(options).trigger("change");
                         },
                         error: function(error) {
@@ -268,12 +278,12 @@
                 }
             });
 
-            // Apply select2
-            $("select").select2({
+            // Apply select2 for select product
+            $("select[data-key=name]").select2({
                 placeholder: "Pilih",
                 theme: "bootstrap",
                 ajax: {
-                    url: "/api/product-detail",
+                    url: "/api/product",
                     data: function(params) {
                         const query = {
                             search: params.term,
@@ -287,7 +297,7 @@
                         return {
                             results: $.map(data.data.data, function(item) {
                                 return {
-                                    text: `${item.product.code} - ${item.product.name}`,
+                                    text: `${item.code} - ${item.name}`,
                                     id: item.id
                                 }
                             }),
@@ -301,7 +311,7 @@
             
             element.append(
                 '<tr>'+
-                    '<td class="border-left-0 border-right-0 border-bottom-0" colspan="7">'+
+                    '<td class="border-left-0 border-right-0 border-bottom-0" colspan="9">'+
                         '<button id="addTransactionItemBtn" class="btn btn-primary btn-block">Tambah produk</button>'+
                     '</td>'+
                 '</tr>'
@@ -312,31 +322,94 @@
             initAddTransactionItem();
             initDeleteTransactionItem();
             initMoneyFormat();
+            applyVariantSelect();
+        }
+
+        // Apply select2 for select variant
+        function applyVariantSelect() {
+            $("select[data-key=variant]").select2({
+                placeholder: "Pilih",
+                theme: "bootstrap"
+            });
         }
 
         function handleChangeProductName(e) {
             const el = $(e);
-            const productDetailId = el.val();
+            const productId = el.val();
             const index = el.data("index");
             $.ajax({
                 method: "get",
-                url: "/api/product-detail/" + productDetailId,
+                url: "/api/product/" + productId,
                 contentType: "application/json",
                 success: function(result) {
                     transactionDetails[index]["id"] = result.data.id;
-                    transactionDetails[index]["unit"] = result.data.unit;
-                    transactionDetails[index]["availableQty"] = result.data.qty;
-                    transactionDetails[index]["price"] = result.data.price;
-                    transactionDetails[index]["storageType"] = result.data.storageType;
-                    transactionDetails[index]["product"]["id"] = result.data.product.id;
-                    transactionDetails[index]["product"]["code"] = result.data.product.code;
-                    transactionDetails[index]["product"]["name"] = result.data.product.name;
+                    transactionDetails[index]["code"] = result.data.code;
+                    transactionDetails[index]["name"] = result.data.name;
+                    transactionDetails[index]["productVariant"]["id"] = result.data.productVariant[0].id;
+                    transactionDetails[index]["productVariant"]["unit"] = result.data.productVariant[0].unit;
+                    transactionDetails[index]["productVariant"]["qtyPerUnit"] = result.data.productVariant[0].qtyPerUnit;
+                    transactionDetails[index]["productVariant"]["price"] = result.data.productVariant[0].price;
 
-                    $("#code-"+index).text(result.data.product.code);
-                    $("#price-"+index).text(rupiahFormat(result.data.price) + "/" + result.data.unit);
+                    // Set variant options
+                    result.data.productVariant.forEach((item, indx) => {
+                        $("select[name='variant["+index+"]']").append(new Option(item.unit, item.id, true, indx === 0));
+                    });
+
+                    $("#code-"+index).text(result.data.code);
+                    $("#price-"+index).text(rupiahFormat(result.data.productVariant[0].price) + "/" + result.data.productVariant[0].unit);
 
                     // Calculate and render sub total
-                    transactionDetails[index].subTotal = calculateSubTotal(transactionDetails[index].price, transactionDetails[index].discount, transactionDetails[index].qty);
+                    transactionDetails[index].subTotal = calculateSubTotal(
+                        transactionDetails[index]["productVariant"].price, 
+                        transactionDetails[index].discount, 
+                        transactionDetails[index].qty
+                    );
+                    renderSubTotal(index, transactionDetails[index].subTotal);
+
+                    // Calculate and render transaction total
+                    transactionTotal = calculateTransactionTotal();
+                    renderTransactionTotal();
+
+                    // Calculate and render grand transaction total
+                    grandTransactionTotal = calculateGrandTotal();
+                    renderGrandTotal();
+
+                    // Calculate and render cash back amount
+                    cashBackAmount = calculateCashBackAmount();
+                    renderCashBackAmount();
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+        }
+
+        function handleChangeProductVariant(e) {
+            const el = $(e);
+            const index = el.data("index");
+            const variantId = el.val();
+            $.ajax({
+                method: "get",
+                url: "/api/product-detail/" + variantId,
+                contentType: "application/json",
+                success: function(result) {
+                    transactionDetails[index]["productVariant"]["id"] = result.data.id;
+                    transactionDetails[index]["productVariant"]["unit"] = result.data.unit;
+                    transactionDetails[index]["productVariant"]["qtyPerUnit"] = result.data.qtyPerUnit;
+                    transactionDetails[index]["productVariant"]["price"] = result.data.price;
+
+                    // Calculate given price
+                    transactionDetails[index].givenPrice = transactionDetails[index]["productVariant"].price - transactionDetails[index].discount;
+
+                    $("#price-"+index).text(rupiahFormat(result.data.price));
+                    $("input[name='given-price["+index+"]']").val(moneyFormat(transactionDetails[index].givenPrice));
+                    
+                    // Calculate and render sub total
+                    transactionDetails[index].subTotal = calculateSubTotal(
+                        transactionDetails[index]["productVariant"].price, 
+                        transactionDetails[index].discount, 
+                        transactionDetails[index].qty
+                    );
                     renderSubTotal(index, transactionDetails[index].subTotal);
 
                     // Calculate and render transaction total
@@ -362,7 +435,7 @@
         }
 
         function quantityHandler() {
-            $("div[name=decreaseQty]").click(function() {
+            $("div[name=decrease-qty]").click(function() {
                 const index = $(this).data("index");
                 const oldQty = +transactionDetails[index].qty;
                 let newQty = oldQty;
@@ -373,7 +446,11 @@
                 transactionDetails[index].qty = newQty;
 
                 // Calculate and render sub total
-                transactionDetails[index].subTotal = calculateSubTotal(transactionDetails[index].price, transactionDetails[index].discount, transactionDetails[index].qty);
+                transactionDetails[index].subTotal = calculateSubTotal(
+                    transactionDetails[index]["productVariant"].price, 
+                    transactionDetails[index].discount, 
+                    transactionDetails[index].qty
+                );
                 renderSubTotal(index, transactionDetails[index].subTotal);
 
                 // Calculate and render transaction total
@@ -389,18 +466,20 @@
                 renderCashBackAmount();
             });
             
-            $("div[name=increaseQty]").click(function() {
+            $("div[name=increase-qty]").click(function() {
                 const index = $(this).data("index");
                 const oldQty = +transactionDetails[index].qty;
                 let newQty = oldQty;
-                if (newQty < +transactionDetails[index].availableQty) {
-                    newQty += 1;
-                }
+                newQty += 1;
                 $("input[name='qty["+index+"]']").val(newQty);
                 transactionDetails[index].qty = newQty;
 
                 // Calculate and render sub total
-                transactionDetails[index].subTotal = calculateSubTotal(transactionDetails[index].price, transactionDetails[index].discount, transactionDetails[index].qty);
+                transactionDetails[index].subTotal = calculateSubTotal(
+                    transactionDetails[index]["productVariant"].price, 
+                    transactionDetails[index].discount, 
+                    transactionDetails[index].qty
+                );
                 renderSubTotal(index, transactionDetails[index].subTotal);
 
                 // Calculate and render transaction total
@@ -492,11 +571,50 @@
         function handleChangeTransactionDetailDiscount(e) {
             const el = $(e);
             const index = el.data("index");
-            const discount = el.val();
-            transactionDetails[index].discount = discount;
+            const discount = el.val().replace(/,/g, "");
+            transactionDetails[index].discount = +discount;
+            transactionDetails[index].givenPrice = transactionDetails[index]["productVariant"].price - (+discount);
+
+            // Render given price
+            $("input[name='given-price["+index+"]']").val(moneyFormat(transactionDetails[index].givenPrice));
             
             // Calculate and render sub total
-            transactionDetails[index].subTotal = calculateSubTotal(transactionDetails[index].price, transactionDetails[index].discount, transactionDetails[index].qty);
+            transactionDetails[index].subTotal = calculateSubTotal(
+                transactionDetails[index]["productVariant"].price, 
+                transactionDetails[index].discount, 
+                transactionDetails[index].qty
+            );
+            renderSubTotal(index, transactionDetails[index].subTotal);
+
+            // Calculate and render transaction total
+            transactionTotal = calculateTransactionTotal();
+            renderTransactionTotal();
+
+            // Calculate and render grand transaction total
+            grandTransactionTotal = calculateGrandTotal();
+            renderGrandTotal();
+
+            // Calculate and render cash back amount
+            cashBackAmount = calculateCashBackAmount();
+            renderCashBackAmount();
+        }
+
+        function handleChangeProductPrice(e) {
+            const el = $(e);
+            const index = el.data("index");
+            const givenPrice = el.val().replace(/,/g, "");
+            transactionDetails[index].givenPrice = +givenPrice;
+            transactionDetails[index].discount = transactionDetails[index]["productVariant"].price - (+givenPrice);         
+
+            // Render discount
+            $("input[name='discount["+index+"]']").val(moneyFormat(transactionDetails[index].discount));
+
+            // Calculate and render sub total
+            transactionDetails[index].subTotal = calculateSubTotal(
+                transactionDetails[index]["productVariant"].price, 
+                transactionDetails[index].discount, 
+                transactionDetails[index].qty
+            );
             renderSubTotal(index, transactionDetails[index].subTotal);
 
             // Calculate and render transaction total
@@ -531,7 +649,7 @@
                         paymentAmount: paymentAmount,
                         productSnapshots: $.map(transactionDetails, function(transactionDetail) {
                             return {
-                                productVariantId: transactionDetail.id,
+                                productVariantId: transactionDetail.productVariant.id,
                                 qty: transactionDetail.qty,
                                 discount: transactionDetail.discount
                             }
@@ -546,7 +664,7 @@
                         
                         if (errors.hasOwnProperty("date")) {
                             const msg = errors.date;
-                            $("#dateError").text(msg);
+                            $("#date-error").text(msg);
                             $("#date").addClass("is-invalid");
                         } else {
                             $("#date").removeClass("is-invalid");
@@ -554,7 +672,7 @@
 
                         if (errors.hasOwnProperty("note")) {
                             const msg = errors.date;
-                            $("#noteError").text(msg);
+                            $("#note-error").text(msg);
                             $("#note").addClass("is-invalid");
                         } else {
                             $("#note").removeClass("is-invalid");
@@ -563,7 +681,7 @@
                         transactionDetails.forEach((transactionDetail, index) => {
                             if (errors.hasOwnProperty("productSnapshots["+index+"].productVariantId")) {
                                 const msg = errors["productSnapshots["+index+"].productVariantId"];
-                                $("#nameError-" + index).text(msg);
+                                $("#name-error-" + index).text(msg);
                                 $("select[name='name["+index+"]']").addClass("is-invalid");
                             } else {
                                 $("select[name='name["+index+"]']").removeClass("is-invalid");
@@ -571,7 +689,7 @@
 
                             if (errors.hasOwnProperty("productSnapshots["+index+"].qty")) {
                                 const msg = errors["productSnapshots["+index+"].qty"];
-                                $("#qtyError-" + index).text(msg);
+                                $("#qty-error-" + index).text(msg);
                                 $("#qtyContainer-" + index).addClass("is-invalid");
                             } else {
                                 $("#qtyContainer-" + index).removeClass("is-invalid");
@@ -579,7 +697,7 @@
 
                             if (errors.hasOwnProperty("productSnapshots["+index+"].discount")) {
                                 const msg = errors["productSnapshots["+index+"].discount"];
-                                $("#discountError-" + index).text(msg);
+                                $("#discount-error-" + index).text(msg);
                                 $("input[name='discount["+index+"]']").addClass("is-invalid");
                             } else {
                                 $("input[name='discount["+index+"]']").removeClass("is-invalid");
