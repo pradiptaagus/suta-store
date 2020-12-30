@@ -101,11 +101,11 @@
                                 '<label for="isParent['+index+']" class="col-md-5 col-form-label">Satuan terbesar</label>' +
                                 '<div class="col-md-7">' +
                                     '<div class="form-check form-check-inline mt-2">' +
-                                          '<input class="form-check-input" type="radio" name="isParent['+index+']" id="isParentTrue['+index+']" value="1" data-key="isParent" data-index="'+index+'" onchange="onChangeProductVariantInput(this)" checked="'+(productVariant.isParent === "1")+'">' +
+                                          '<input class="form-check-input" type="radio" name="isParent['+index+']" id="isParentTrue['+index+']" value="1" data-key="isParent" data-index="'+index+'" onchange="onChangeProductVariantInput(this)" '+(productVariant.isParent === "1" ? "checked" : "")+'>' +
                                           '<label class="form-check-label" for="isParentTrue['+index+']">Ya</label>' +
                                     '</div>' +
                                     '<div class="form-check form-check-inline mt-2">' +
-                                          '<input class="form-check-input" type="radio" name="isParent['+index+']" id="isParentFalse['+index+']" value="0" data-key="isParent" data-index="'+index+'" onchange="onChangeProductVariantInput(this)" checked="'+(productVariant.isParent === "0")+'">' +
+                                          '<input class="form-check-input" type="radio" name="isParent['+index+']" id="isParentFalse['+index+']" value="0" data-key="isParent" data-index="'+index+'" onchange="onChangeProductVariantInput(this)" '+(productVariant.isParent === "0" ? "checked" : "")+'>' +
                                           '<label class="form-check-label" for="isParentFalse['+index+']">Tidak</label>' +
                                     '</div>' +
                                     '<div class="invalid-feedback" id="isParentError-'+index+'"></div>' +
