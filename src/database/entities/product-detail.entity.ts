@@ -24,7 +24,7 @@ export class ProductDetail {
 
     @OneToOne(() => ProductDetail)
     @JoinColumn({name: "childId"})
-    childId!: ProductDetail|null;
+    child!: ProductDetail|null;
 
     @CreateDateColumn()
     createdAt!: string;

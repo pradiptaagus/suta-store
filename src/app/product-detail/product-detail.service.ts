@@ -23,7 +23,7 @@ export class ProductDetailService {
                 alias: "productDetail",
                 leftJoin: {
                     product: "productDetail.product",
-                    child: "productDetail.childId"
+                    child: "productDetail.child"
                 }
             },
             where: whereClause.join(" and ")
@@ -43,7 +43,7 @@ export class ProductDetailService {
                 alias: "productDetail",
                 leftJoinAndSelect: {
                     product: "productDetail.product",
-                    child: "productDetail.childId"
+                    child: "productDetail.child"
                 }
             },
             where: whereClause.join(" and "),
@@ -58,7 +58,7 @@ export class ProductDetailService {
                 alias: "productDetail",
                 leftJoinAndSelect: {
                     product: "productDetail.product",
-                    child: "productDetail.childId"
+                    child: "productDetail.child"
                 }
             }
         });
@@ -74,7 +74,7 @@ export class ProductDetailService {
             productDetail.qtyPerUnit = body.qtyPerUnit;
             productDetail.price = body.price;
             productDetail.isParent = body.isParent ? true : false;
-            if (child) productDetail.childId = child;
+            if (child) productDetail.child = child;
             const result = await this.productDetailRepository.save(productDetail);
             return result;
         }        
@@ -90,7 +90,7 @@ export class ProductDetailService {
             productDetail.qtyPerUnit = body.qtyPerUnit;
             productDetail.price = body.price;
             productDetail.isParent = +body.isParent ? true : false;
-            productDetail.childId = child ? child : null;
+            productDetail.child = child ? child : null;
             const result = await this.productDetailRepository.save(productDetail);
             return result;
         }

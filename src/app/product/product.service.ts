@@ -24,7 +24,7 @@ export class ProductService {
                 alias: "product",
                 leftJoin: {
                     productVariant: "product.productVariant",
-                    child: "productVariant.childId"
+                    child: "productVariant.child"
                 }
             },
             where: whereClause
@@ -48,7 +48,7 @@ export class ProductService {
                 alias: "product",
                 leftJoinAndSelect: {
                     productVariant: "product.productVariant",
-                    child: "productVariant.childId"
+                    child: "productVariant.child"
                 }
             },
             where: whereClause,
@@ -66,7 +66,7 @@ export class ProductService {
                 alias: "product",
                 leftJoinAndSelect: {
                     productVariant: "product.productVariant",
-                    child: "productVariant.childId"
+                    child: "productVariant.child"
                 }
             }
         });
