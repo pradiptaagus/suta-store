@@ -34,8 +34,8 @@ export class TransactionController {
         this.router.get(`${this.viewPath}/report`, this.report);
         this.router.get(this.viewPath, this.index);
         this.router.get(`${this.viewPath}/new`, this.add);
-        this.router.get(`${this.viewPath}/:id`, this.view);
-        this.router.get(`/cashier`, this.cashier);
+        this.router.get(`${this.viewPath}/cashier`, this.cashier);
+        this.router.get(`${this.viewPath}/:id`, this.view);        
     }
 
     index(req: Request, res: Response) {
