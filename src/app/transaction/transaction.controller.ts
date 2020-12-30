@@ -303,12 +303,12 @@ export class TransactionController {
             }
 
             /** 
-             * Reduce product variant stock
-             * Formulas = product stock - transaction detail stock
+             * Reduce product stock
+             * Formulas = product stock - (transaction detail stock * product variant quantity per unit)
              */
             const product = await new ProductService().findOne(productVariant.product.id);
             if (!product) continue;
-            const newQuantity = product.qty - transactionDetail.qty;
+            const newQuantity = product.qty - (transactionDetail.qty * productVariant.qtyPerUnit);
             const reduceProductStockResult = new ProductService().updateStock(newQuantity, product.id);
             if (!reduceProductStockResult) {
                 return new ResponseBuilder().internalServerError(res);
@@ -324,6 +324,9 @@ export class TransactionController {
             paymentAmount: body.paymentAmount
         }
         const updateTransactionResult = await new TransactionService().update(updateBody, transaction.id);
+        if (!updateTransactionResult) {
+            return new ResponseBuilder().internalServerError(res);
+        }
 
         const data = await new TransactionService().findOne(transaction.id);
         return new ResponseBuilder().storeResponse(res, true, `transaction`, data);
@@ -521,14 +524,14 @@ export class TransactionController {
              */
             if (transactionDetail.id) {
                 /** 
-                 * Reduce product variant stock
-                 * New product variant stock = (old product stock + old product snapshot stock) - new product snapshot stock
+                 * Reduce product stock
+                 * Formulas = (old product stock + old product snapshot stock) - (transaction detail stock * product variant quantity per unit)
                  */
                 const selectedProductSnapshot = await new ProductSnapshotService().findOne(transactionDetail.id);
                 const product = await new ProductService().findOne(productVariant.product.id);
                 if (!product || !selectedProductSnapshot) continue;
 
-                const newQuantity = (product.qty + selectedProductSnapshot.qty) - transactionDetail.qty;
+                const newQuantity = (product.qty + selectedProductSnapshot.qty) - (transactionDetail.qty * productVariant.qtyPerUnit);
                 const reduceProductStockResult = new ProductService().updateStock(newQuantity, product.id);
                 if (!reduceProductStockResult) {
                     return new ResponseBuilder().internalServerError(res);
@@ -554,11 +557,11 @@ export class TransactionController {
 
                 /** 
                  * Reduce product variant stock
-                 * Formulas = product stock - transaction detail stock
+                 * Formulas = product stock - (transaction detail stock * product variant quantity per unit)
                  */
                 const product = await new ProductService().findOne(productVariant.product.id);
                 if (!product) continue;
-                const newQuantity = product.qty - transactionDetail.qty;
+                const newQuantity = product.qty - (transactionDetail.qty * productVariant.qtyPerUnit);
                 const reduceProductStockResult = new ProductService().updateStock(newQuantity, product.id);
                 if (!reduceProductStockResult) {
                     return new ResponseBuilder().internalServerError(res);
@@ -574,7 +577,10 @@ export class TransactionController {
             transactionTotal: transactionTotal - body.discount,
             paymentAmount: body.paymentAmount
         }
-        await new TransactionService().update(updateBody, transaction.id);
+        const updateTransactionResult = await new TransactionService().update(updateBody, transaction.id);
+        if (!updateTransactionResult) {
+            return new ResponseBuilder().internalServerError(res);
+        }
 
         const data = await new TransactionService().findOne(id)
         return new ResponseBuilder().updateResponse(res, false, `transaction`, data);
