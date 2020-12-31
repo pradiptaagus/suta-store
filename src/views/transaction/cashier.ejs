@@ -561,11 +561,9 @@
 
         function handleChangePaymentAmount(e) {
             paymentAmount = $(e).val();
-            paymentAmount = paymentAmount.replace(/,/g, "");
-            if (paymentAmount && paymentAmount > 0) {
-                cashBackAmount = calculateCashBackAmount();
-                renderCashBackAmount();
-            }
+            paymentAmount = +paymentAmount.replace(/,/g, "");
+            cashBackAmount = calculateCashBackAmount();
+            renderCashBackAmount();
         }
 
         function handleChangeTransactionDetailDiscount(e) {
