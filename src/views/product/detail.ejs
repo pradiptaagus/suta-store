@@ -12,28 +12,28 @@
     <div class="container my-5">
         <h1 class="mb-3">Detail Produk</h1>
         <div class="row mb-3">
-            <div class="col-12 col-md-3 font-weight-bold">Kode produk</div>
+            <div class="col-12 col-md-3">Kode produk</div>
             <div class="col-9">
                 <span class="d-none d-md-inline-block">:</span>
                 <span id="code"></span>
             </div>
         </div>
         <div class="row mb-3">
-            <div class="col-12 col-md-3 font-weight-bold">Nama produk</div>
+            <div class="col-12 col-md-3">Nama produk</div>
             <div class="col-9">
                 <span class="d-none d-md-inline-block">:</span>
                 <span id="name"></span>
             </div>
         </div>
         <div class="row mb-3">
-            <div class="col-12 col-md-3 font-weight-bold">Lokasi penyimpanan</div>
+            <div class="col-12 col-md-3">Lokasi penyimpanan</div>
             <div class="col-9">
                 <span class="d-none d-md-inline-block">:</span>
                 <span id="storageType"></span>
             </div>
         </div>
         <div class="row mb-3">
-            <div class="col-12 col-md-3 mb-3 mb-md-0 font-weight-bold">Varian</div>
+            <div class="col-12 col-md-3 mb-3 mb-md-0">Varian</div>
             <div class="col-12 col-md-9" id="variant"></div>
         </div>
         <a href="/product" class="btn btn-secondary">Kembali</a>
@@ -92,20 +92,21 @@
         function renderProductVariant(data) {
             const el = $("#variant");
             el.html("");
-            data.productVariant.forEach(productVariant => {
+            data.productVariant.forEach((productVariant, index) => {
                 if (!productVariant.deletedAt) {
                     el.append(
                         '<div class="border rounded p-3 w-100 mb-3">' +
+                            '<div class="mb-3 font-weight-bold">Variant ke-'+(index + 1)+'</div>' +
                             '<div class="row mb-3">' +
-                                '<div class="col-md-5 font-weight-bold">Satuan</div>' +
+                                '<div class="col-md-5">Satuan</div>' +
                                 '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> ' + productVariant.unit + '</div>' +
                             '</div>' +
                             '<div class="row mb-3">' +
-                                '<div class="col-md-5 font-weight-bold">Harga</div>' +
+                                '<div class="col-md-5">Harga</div>' +
                                 '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> ' + (new Intl.NumberFormat('en-US', {style: "currency", currency: "IDR"}).format(productVariant.price)) + '</div>' +
                             '</div>' +
                             '<div class="row">' +
-                                '<div class="col-md-5 font-weight-bold">Stok</div>' +
+                                '<div class="col-md-5">Stok</div>' +
                                 '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> ' + (productVariant.child ? Math.floor(data.qty / productVariant.qtyPerUnit) : data.qty) + ' ' + productVariant.unit + '</div>' +
                             '</div>' +
                         '</div>'
