@@ -19,11 +19,13 @@ export class ProductController {
         this.router.get(this.path, this.findAll);
         this.router.get(`${this.path}/:id`, this.findOne);
         this.router.post(this.path, this.store);
+        this.router.put(`${this.path}/update-stock/:id`, this.addStock);
         this.router.put(`${this.path}/:id`, this.update);
         this.router.delete(`${this.path}/:id`, this.delete);
         this.router.get(this.viewPath, this.index);
         this.router.get(`${this.viewPath}/new`, this.add);
         this.router.get(`${this.viewPath}/edit/:id`, this.edit);
+        this.router.get(`${this.viewPath}/add-stock/:id`, this.addStockView);
         this.router.get(`${this.viewPath}/:id`, this.view);
     }
 
@@ -43,6 +45,12 @@ export class ProductController {
 
     view(req: Request, res: Response) {
         res.render("product/detail.ejs", {
+            id: req.params.id
+        });
+    }
+
+    addStockView(req: Request, res: Response) {
+        res.render("product/add-stock.ejs", {
             id: req.params.id
         });
     }
@@ -406,6 +414,51 @@ export class ProductController {
         }
         
         const data = await new ProductService().findOne(product.id);
+        return new ResponseBuilder().updateResponse(res, true, `product`, data);
+    }
+
+    /**
+     * 
+     * @param req 
+     * @param res 
+     * @param next 
+     */
+    async addStock(req: Request, res: Response, next: NextFunction) {
+        const id = req.params.id;
+        const body: {
+            additionQty: number // smallest quantity unit
+        } = req.body;
+        
+        // Check if product already exist
+        const selectedProduct = await new ProductService().findOne(id);
+        if (!selectedProduct) {
+            return new ResponseBuilder().findOneResponse(res, false, `product`);
+        }
+
+        // Validate request
+        await check("additionQty")
+            .notEmpty().bail().withMessage("Addition stock field is required!")
+            .isNumeric().withMessage("Addition stock field value must be number!")
+            .run(req);
+        
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            let errorMessages: any = {};
+            errors.array().forEach(err => {
+                errorMessages[err.param] = err.msg;
+            });
+            return new ResponseBuilder().updateResponse(res, false, `product`, errorMessages);
+        }
+        // End validate request
+
+        // Update product stock
+        const newQty = +body.additionQty + selectedProduct.qty;
+        const addStockResult = await new ProductService().updateStock(newQty, id);
+        if (!addStockResult) {
+            return new ResponseBuilder().internalServerError(res);
+        }
+
+        const data = await new ProductService().findOne(id);
         return new ResponseBuilder().updateResponse(res, true, `product`, data);
     }
 
