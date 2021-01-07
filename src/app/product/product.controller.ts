@@ -164,6 +164,11 @@ export class ProductController {
         await check("productVariants.*.qtyPerUnit")
             .notEmpty().bail().withMessage("Product quantity per unit field is required!")
             .isNumeric().withMessage("Product qiantity per unit field value should be number")
+            .custom(async value => {
+                if(value <= 0) {
+                    return Promise.reject("Product quantity per unit must be grater than 0!")
+                }
+            })
             .run(req);
         await check("productVariants.*.price")
             .notEmpty().bail().withMessage("Product price field is required!")
