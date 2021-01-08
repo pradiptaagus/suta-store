@@ -5,6 +5,7 @@ import { ProductDetailService } from "../product-detail/product-detail.service";
 import { StoreProductDetailDTO, UpdateProductDetailDTO } from "../product-detail/product-detail.dto";
 import { CountProductDto, FindAllProductDTO, StoreProductDTO, UpdateProductDTO } from "./product.dto";
 import { ResponseBuilder } from "../../helpers/response-builder.helper";
+import { ProductDetail } from "../../database/entities/product-detail.entity";
 
 export class ProductController {
     private path = "/api/product";
@@ -163,7 +164,7 @@ export class ProductController {
         await check("productVariants.*.unit").notEmpty().withMessage("Product unit field is required!").run(req);
         await check("productVariants.*.qtyPerUnit")
             .notEmpty().bail().withMessage("Product quantity per unit field is required!")
-            .isNumeric().withMessage("Product qiantity per unit field value should be number")
+            .isNumeric().bail().withMessage("Product qiantity per unit field value should be number")
             .custom(async value => {
                 if(value <= 0) {
                     return Promise.reject("Product quantity per unit must be grater than 0!")
@@ -209,7 +210,7 @@ export class ProductController {
          */
         let productVariantsTemp: {
             index: number,
-            productVariantId: string
+            productVariant: ProductDetail
         }[] = [];
 
         // Loop to create product variant
@@ -218,7 +219,9 @@ export class ProductController {
             // Store product variant body
             const productVariantBody: StoreProductDetailDTO = {
                 productId: product.id,
-                qtyPerUnit: productVariants[i].qtyPerUnit,
+                qtyPerUnit: productVariants[i].childIndex ? 
+                    productVariants[i].qtyPerUnit * productVariants[productVariants[i].childIndex].qtyPerUnit : 
+                    productVariants[i].qtyPerUnit,
                 price: productVariants[i].price,
                 unit: productVariants[i].unit,
                 isParent: productVariants[i].isParent
@@ -232,7 +235,7 @@ export class ProductController {
             // Add storeProductVariantResult to productVariantsTemp
             productVariantsTemp.push({
                 index: i,
-                productVariantId: storeProductVariantResult.id
+                productVariant: storeProductVariantResult
             });
         }
 
@@ -240,14 +243,14 @@ export class ProductController {
         for (let i = 0; i < productVariantsTemp.length; i++) {
             const productVariantBody: UpdateProductDetailDTO = {
                 productId: product.id,
-                qtyPerUnit: productVariants[i].qtyPerUnit,
-                price: productVariants[i].price,
-                unit: productVariants[i].unit,
-                isParent: productVariants[i].isParent,
-                childId: productVariants[i].childIndex ? productVariantsTemp[(+productVariants[i].childIndex) - 1].productVariantId : ""
+                qtyPerUnit: productVariantsTemp[i].productVariant.qtyPerUnit,
+                price: productVariantsTemp[i].productVariant.price,
+                unit: productVariantsTemp[i].productVariant.unit,
+                isParent: productVariantsTemp[i].productVariant.isParent,
+                childId: productVariants[i].childIndex ? productVariantsTemp[productVariants[i].childIndex - 1].productVariant.id : ""
             }
 
-            const updateProductVariantResult = await new ProductDetailService().update(productVariantBody, productVariantsTemp[i].productVariantId);
+            const updateProductVariantResult = await new ProductDetailService().update(productVariantBody, productVariantsTemp[i].productVariant.id);
         }
 
         const data = await new ProductService().findOne(product.id)
