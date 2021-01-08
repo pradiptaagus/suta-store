@@ -114,6 +114,14 @@
             initDeleteProductVariant();
         });
 
+        function getProductVariantsUnit(productVariants, index) {
+            return productVariants
+                .map((varian, idx) => {
+                    return {label: varian.unit, value: idx, selected: varian.childIndex}
+                })
+                .filter(unit => unit.value !== index);
+        }
+
         function fetchData(id) {
             $.ajax({
                 method: "get",
@@ -131,11 +139,11 @@
                         const item = data.productVariant[i];
                         if (!item.deletedAt) {
                             let childIndex = "";
-                            if (item.childId) {
+                            if (item.child) {
                                 for (let j = 0; j < data.productVariant.length; j++) {
                                     const checkItem = data.productVariant[j];
-                                    if (checkItem.childId && item.childId && (item.childId.id === checkItem.childId.id) ) {
-                                        childIndex = j + 2;
+                                    if (checkItem.child && item.child && (item.child.id === checkItem.child.id) ) {
+                                        childIndex = j + 1;
                                         break;
                                     } else {
                                         childIndex = "";
@@ -184,11 +192,20 @@
                                     '<div class="invalid-feedback" id="unitError-'+index+'"></div>' +
                                 '</div>' +
                             '</div>' +
-                            '<div class="form-group row">' +
+                            '<div class="form-group row" id="unitArea-'+index+'">' +
                                 '<label for="qtyPerUnit['+index+']" class="col-md-5 col-form-label">Jumlah per satuan</label>' +
                                 '<div class="col-md-7">' +
-                                    '<input class="form-control input-stock" type="text" name="qtyPerUnit['+index+']" id="qtyPerUnit['+index+']" placeholder="Contoh: 10" value="'+productVariant.qtyPerUnit+'" data-key="qtyPerUnit" data-index="'+index+'" data-numberonly="true" onchange="onChangeProductVariantInput(this)">' +
-                                    '<div class="invalid-feedback" id="qtyPerUnitError-'+index+'"></div>' +
+                                    '<div style="width: 200px" class="d-flex">' +
+                                        '<div class="col-md-4 pl-0 pr-0">' +
+                                            '<input class="form-control" type="text" name="qtyPerUnit['+index+']" id="qtyPerUnit['+index+']" placeholder="Contoh: 10" value="'+productVariant.qtyPerUnit+'" data-key="qtyPerUnit" data-index="'+index+'" data-numberonly="true" onchange="onChangeProductVariantInput(this)">' +
+                                            '<div class="invalid-feedback" id="qtyPerUnitError-'+index+'"></div>' +
+                                        '</div>' +
+                                        '<div class="col-md-8 pr-0">'+
+                                            '<select class="custom-select childIndex" name="childIndex['+index+']" id="childIndex['+index+']" data-key="childIndex" data-index="'+index+'" onchange="onChangeProductVariantInput(this)">' +
+                                            '</select>' +
+                                            '<div class="invalid-feedback" id="childIndexError-'+index+'"></div>' +
+                                        '</div>' +
+                                    '</div>' +
                                 '</div>' +
                             '</div>' +
                             '<div class="form-group row">' +
@@ -205,14 +222,6 @@
                                     '<div class="invalid-feedback" id="isParentError-'+index+'"></div>' +
                                 '</div>' +
                             '</div>' +
-                            '<div class="form-group row">' +
-                                '<label for="childIndex['+index+']" class="col-md-5 col-form-label">Turunan satuan</label>' +
-                                '<div class="col-md-7">' +
-                                    '<input class="form-control input-child" type="text" name="childIndex['+index+']" id="childIndex['+index+']" placeholder="Contoh: 1" value="'+productVariant.childIndex+'" data-key="childIndex" data-index="'+index+'" data-numberonly="true" onchange="onChangeProductVariantInput(this)">' +
-                                    '<small class="form-text text-muted">Biarkan kosong jika tidak ada turunan satuan</small>' +
-                                    '<div class="invalid-feedback" id="childIndexError-'+index+'"></div>' +
-                                '</div>' +
-                            '</div>' +
                             '<button name="showDeleteProductVariantDialog" data-index="'+index+'" type="button" class="btn btn-danger">Hapus varian</button>' +
                         '</div>'
                     );
@@ -223,6 +232,7 @@
             initShowDeleteProductVariantDialog();
             initAllowNumberOnly();
             initMoneyFormat();
+            setVariantsUnit();
         }
 
         function renderAddVariant() {
@@ -289,6 +299,25 @@
             });
         }
 
+        function setVariantsUnit() {
+            $(".childIndex").each((index, child) => {
+                const units = getProductVariantsUnit(productVariantData, index)
+                let selectedValue = productVariantData[index].childIndex;
+                $(child).empty();
+                const availableValues = [];
+                units.forEach(unit => {
+                    child.append(new Option(unit.label === "" ? "Variant " + (unit.value+1) : unit.label, unit.value));
+                    availableValues.push(unit.value);
+                })
+                child.append(new Option("Tidak ada", ""))
+                const found = availableValues.findIndex(v => v == selectedValue);
+                if(found === -1) {
+                    selectedValue = "";
+                }
+                $(child).val(selectedValue);
+            })
+        }
+
         function initSaveUpdate() {
             $("form").submit(function(e) {
                 e.preventDefault();
@@ -296,7 +325,7 @@
                 for (let i = 0; i < productVariantData.length; i++) {
                     productVariants.push({
                         ...productVariantData[i],
-                        price: productVariantData[i].price.replace(/,/g, "")
+                        price: productVariantData[i].price
                     });
                 }
                 
@@ -422,6 +451,7 @@
             const value = el.val();
             const index = el.data("index");
             productVariantData[index][key] = value;
+            setVariantsUnit();
         }
 
         function initDeleteProduct() {
