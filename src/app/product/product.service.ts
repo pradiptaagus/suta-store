@@ -10,6 +10,10 @@ export class ProductService {
         this.productRepository = getConnection().getRepository<Product>(Product);
     }
 
+    sortProductVariant(productVariants: ProductDetail[]) {
+        return productVariants.sort((a, b) => b.price - a.price);
+    }
+
     async totalRecord(query: CountProductDto) {
         const code = query.code;
         const name = query.name;
@@ -59,22 +63,14 @@ export class ProductService {
                 createdAt: "ASC"
             }
         });
-        products.map(product => {
-            product.productVariant = this.sortProductVariant(product.productVariant);
-            return product;
-        })
-        return products;
-    }
-
-    sortProductVariant(productVariants: ProductDetail[]): ProductDetail[] {
-        const sortedProductVariants: ProductDetail[] = [];
-        let current: ProductDetail | undefined = productVariants.find(variant => variant.isParent);
-        while(current != undefined) {
-            sortedProductVariants.push(current)
-            console.log(current.id)
-            current = productVariants.find(variant => variant?.id === current?.child?.id);
+        
+        if (products) {
+            console.log("tes")
+            products.map(product => {
+                this.sortProductVariant(product.productVariant);
+            })
         }
-        return sortedProductVariants;
+        return products;
     }
 
     async findOne(id: string): Promise<Product | undefined> {
@@ -87,7 +83,7 @@ export class ProductService {
                 }
             }
         });
-        if(product != undefined) {
+        if(product) {
             product.productVariant = this.sortProductVariant(product.productVariant);
         }
         return product;
