@@ -185,8 +185,11 @@ export class TransactionController {
             .run(req);
         await check("productSnapshots.*.discount")
             .custom(value => {
-                if (!value || value === undefined) return true;
                 switch (value) {
+                    case !value:
+                        return true;
+                    case value === undefined:
+                        return true;
                     case validator.isNumeric(value, {no_symbols: true}):
                         return Promise.reject("Product discount field value should be number!")
                     default:
@@ -393,8 +396,11 @@ export class TransactionController {
             .run(req);
         await check("productSnapshots.*.discount")
             .custom(value => {
-                if (!value || value === undefined) return true;
                 switch (value) {
+                    case !value:
+                        return true;
+                    case value === undefined:
+                        return true;
                     case validator.isNumeric(value, {no_symbols: true}):
                         return Promise.reject("Product discount field value should be number!")
                     default:
