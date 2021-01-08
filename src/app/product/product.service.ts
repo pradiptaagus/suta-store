@@ -1,6 +1,7 @@
 import { getConnection, IsNull, Like, Not, Repository } from "typeorm";
 import { Product } from "../../database/entities/product.entity";
 import { StoreProductDTO, UpdateProductDTO, FindAllProductDTO, CountProductDto } from "./product.dto";
+import { ProductDetail } from "../../database/entities/product-detail.entity";
 
 export class ProductService {
     private productRepository: Repository<Product>;
@@ -43,7 +44,7 @@ export class ProductService {
         if (name) whereClause.push({name: Like(`%${name}%`)});
         if (storageType) whereClause.push({storageType: Like(`%${storageType}%`)});
 
-        return await this.productRepository.find({
+        const products = await this.productRepository.find({
             join: {
                 alias: "product",
                 leftJoinAndSelect: {
@@ -58,10 +59,26 @@ export class ProductService {
                 createdAt: "ASC"
             }
         });
+        products.map(product => {
+            product.productVariant = this.sortProductVariant(product.productVariant);
+            return product;
+        })
+        return products;
+    }
+
+    sortProductVariant(productVariants: ProductDetail[]): ProductDetail[] {
+        const sortedProductVariants: ProductDetail[] = [];
+        let current: ProductDetail | undefined = productVariants.find(variant => variant.isParent);
+        while(current != undefined) {
+            sortedProductVariants.push(current)
+            console.log(current.id)
+            current = productVariants.find(variant => variant?.id === current?.child?.id);
+        }
+        return sortedProductVariants;
     }
 
     async findOne(id: string): Promise<Product | undefined> {
-        return await this.productRepository.findOne(id, {
+        const product = await this.productRepository.findOne(id, {
             join: {
                 alias: "product",
                 leftJoinAndSelect: {
@@ -70,6 +87,10 @@ export class ProductService {
                 }
             }
         });
+        if(product != undefined) {
+            product.productVariant = this.sortProductVariant(product.productVariant);
+        }
+        return product;
     }
 
     async store(body: StoreProductDTO): Promise<Product> {

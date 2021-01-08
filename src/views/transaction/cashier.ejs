@@ -46,9 +46,9 @@
                     <tr>
                         <th class="border-top-0 border-left-0" style="width: 150px;">Kode</th>
                         <th class="border-top-0">Nama produk</th>
-                        <th class="border-top-0" style="width: 120px;">Varian</th>
+                        <th class="border-top-0" style="width: 120px;">Satuan</th>
                         <th class="border-top-0" style="width: 200px;">Harga satuan</th>
-                        <th class="border-top-0" style="width: 100px">Banyak</th>
+                        <th class="border-top-0" style="width: 100px">Jumlah</th>
                         <th class="border-top-0" style="width: 150px">Diskon (IDR)</th>
                         <th class="border-top-0" style="width: 160px;">Harga akhir (IDR)</th>
                         <th class="border-top-0" style="width: 200px;">Total</th>
@@ -234,7 +234,7 @@
                             '<div class="invalid-feedback" id="varian-error-'+index+'"></div> '+
                         '</td>'+
                         '<td>'+
-                            '<span id="price-'+index+'">'+ rupiahFormat(transactionDetail.productVariant.price) + '/' + (transactionDetail.unit || "unit") +
+                            '<span id="price-'+index+'">'+ rupiahFormat(transactionDetail.productVariant.price) +
                             '</span></td>'+
                         '<td>'+
                             '<div class="d-flex">'+

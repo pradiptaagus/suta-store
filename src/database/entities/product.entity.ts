@@ -33,5 +33,5 @@ export class Product {
     deletedAt!: string;
 
     @OneToMany(() => ProductDetail, productDetail => productDetail.product)
-    productVariant!: ProductDetail;
+    productVariant!: ProductDetail[];
 }
