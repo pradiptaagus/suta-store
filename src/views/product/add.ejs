@@ -105,7 +105,7 @@
                                             '<div class="invalid-feedback" id="qtyPerUnitError-'+index+'"></div>' +
                                         '</div>' +
                                         '<div class="col-md-8 pr-0">' +
-                                            '<select class="form-control childIndex" name="childIndex['+index+']" id="childIndex['+index+']" data-key="childIndex" data-index="'+index+'" onchange="onChangeProductVariantInput(this)">' +
+                                            '<select class="custom-select childIndex" name="childIndex['+index+']" id="childIndex['+index+']" data-key="childIndex" data-index="'+index+'" onchange="onChangeProductVariantInput(this)">' +
                                             '</select>' +
                                             '<div class="invalid-feedback" id="childIndexError-'+index+'"></div>' +
                                         '</div>' +
@@ -126,14 +126,6 @@
                                     '<div class="invalid-feedback" id="isParentError-'+index+'"></div>' +
                                 '</div>' +
                             '</div>' +
-                            // '<div class="form-group row">' +
-                            //     '<label for="childIndex['+index+']" class="col-md-5 col-form-label">Turunan satuan</label>' +
-                            //     '<div class="col-md-7">' +
-                            //         '<input class="form-control input-child" type="text" name="childIndex['+index+']" id="childIndex['+index+']" placeholder="Contoh: 1" value="'+productVariant.childIndex+'" data-key="childIndex" data-index="'+index+'" data-numberonly="true" onchange="onChangeProductVariantInput(this)">' +
-                            //         '<small class="form-text text-muted">Biarkan kosong jika tidak ada turunan satuan</small>' +
-                            //         '<div class="invalid-feedback" id="childIndexError-'+index+'"></div>' +
-                            //     '</div>' +
-                            // '</div>' +
                             '<button name="deleteProductVariantBtn" data-index="'+index+'" type="button" class="btn btn-danger">Hapus varian</button>' +
                         '</div>'
                     );
@@ -145,9 +137,6 @@
             initAllowNumberOnly();
             initMoneyFormat();
             setVariantsUnit();
-            if(productVariants[0].isParent == "1") {
-                $("#unitArea-0").hide()
-            }
         }
 
         function renderAddVariant() {
