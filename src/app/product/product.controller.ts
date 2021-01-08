@@ -314,6 +314,11 @@ export class ProductController {
         await check("productVariants.*.qtyPerUnit")
             .notEmpty().bail().withMessage("Product quantity per unit field is required!")
             .isNumeric().withMessage("Product qiantity per unit field value should be number")
+            .custom(async value => {
+                if (value <= 0) {
+                    return Promise.reject("Product quantity per unit must be grater than 0!")
+                }
+            })
             .run(req);
         await check("productVariants.*.price")
             .notEmpty().bail().withMessage("Product price field is required!")
@@ -354,7 +359,7 @@ export class ProductController {
          */
         let productVariantsTemp: {
             index: number,
-            productVariantId: string
+            productVariant: ProductDetail
         }[] = [];
 
         /**
@@ -369,7 +374,9 @@ export class ProductController {
                 // Store product detail
                 const productVariantBody: StoreProductDetailDTO = {
                     productId: product.id,
-                    qtyPerUnit: productVariants[i].qtyPerUnit,
+                    qtyPerUnit: productVariants[i].childIndex ? 
+                        productVariants[i].qtyPerUnit * productVariants[productVariants[i].childIndex].qtyPerUnit : 
+                        productVariants[i].qtyPerUnit,
                     price: productVariants[i].price,
                     unit: productVariants[i].unit,
                     isParent: productVariants[i].isParent
@@ -381,7 +388,7 @@ export class ProductController {
                 // Add storeProductVariantResult to productVariantsTemp
                 productVariantsTemp.push({
                     index: i,
-                    productVariantId: storeProductVariantResult.id
+                    productVariant: storeProductVariantResult
                 });
             } else if (productVariantId) {
                 // Update product detail
@@ -389,7 +396,9 @@ export class ProductController {
                 if (!productVariant) continue;
                 const productVariantBody: UpdateProductDetailDTO = {
                     productId: product.id,
-                    qtyPerUnit: productVariants[i].qtyPerUnit,
+                    qtyPerUnit: productVariants[i].childIndex ? 
+                        productVariants[i].qtyPerUnit * productVariants[productVariants[i].childIndex].qtyPerUnit : 
+                        productVariants[i].qtyPerUnit,
                     price: productVariants[i].price,
                     unit: productVariants[i].unit,
                     isParent: productVariants[i].isParent
@@ -403,7 +412,7 @@ export class ProductController {
                 // Add storeProductVariantResult to productVariantsTemp
                 productVariantsTemp.push({
                     index: i,
-                    productVariantId: updateProductVariantResult.id
+                    productVariant: updateProductVariantResult
                 });
             }
         }
@@ -412,13 +421,13 @@ export class ProductController {
         for (let i = 0; i < productVariantsTemp.length; i++) {
             const updateProductVariantBody: UpdateProductDetailDTO = {
                 productId: product.id,
-                qtyPerUnit: productVariants[i].qtyPerUnit,
-                price: productVariants[i].price,
-                unit: productVariants[i].unit,
-                isParent: productVariants[i].isParent,
-                childId: productVariants[i].childIndex ? productVariantsTemp[(+productVariants[i].childIndex) - 1].productVariantId : ""
+                qtyPerUnit: productVariantsTemp[i].productVariant.qtyPerUnit,
+                price: productVariantsTemp[i].productVariant.price,
+                unit: productVariantsTemp[i].productVariant.unit,
+                isParent: productVariantsTemp[i].productVariant.isParent,
+                childId: productVariants[i].childIndex ? productVariantsTemp[productVariants[i].childIndex - 1].productVariant.id : ""
             }
-            const updateProductVariantResult = await new ProductDetailService().update(updateProductVariantBody, productVariantsTemp[i].productVariantId);
+            const updateProductVariantResult = await new ProductDetailService().update(updateProductVariantBody, productVariantsTemp[i].productVariant.id);
         }
         
         const data = await new ProductService().findOne(product.id);
