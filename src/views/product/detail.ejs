@@ -90,13 +90,24 @@
         }
 
         function renderProductVariant(data) {
+            console.log(data.qty)
             const el = $("#variant");
             el.html("");
-            data.productVariant.forEach((productVariant, index) => {
+            for (let i = 0; i < data.productVariant.length; i++) {
+                const productVariant = data.productVariant[i];
+                const childProductVariant = data.productVariant[i].child;
+                console.log(productVariant, childProductVariant)
+                if (productVariant.child) {
+                    console.log(`${data.qty} / (${productVariant.qtyPerUnit} * ${childProductVariant.qtyPerUnit})`)
+                    console.log(data.qty / (productVariant.qtyPerUnit * childProductVariant.qtyPerUnit))
+                } else {
+                    console.log(productVariant.qtyPerUnit)
+                }
+
                 if (!productVariant.deletedAt) {
                     el.append(
                         '<div class="border rounded p-3 w-100 mb-3">' +
-                            '<div class="mb-3 font-weight-bold">Variant ke-'+(index + 1)+'</div>' +
+                            '<div class="mb-3 font-weight-bold">Variant ke-'+(i + 1)+'</div>' +
                             '<div class="row mb-3">' +
                                 '<div class="col-md-5">Satuan</div>' +
                                 '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> ' + productVariant.unit + '</div>' +
@@ -107,12 +118,12 @@
                             '</div>' +
                             '<div class="row">' +
                                 '<div class="col-md-5">Stok</div>' +
-                                '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> ' + (productVariant.child ? Math.floor(data.qty / productVariant.qtyPerUnit) : data.qty) + ' ' + productVariant.unit + '</div>' +
+                                '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> ' + (productVariant.child ? Math.floor(data.qty / (productVariant.qtyPerUnit * childProductVariant.qtyPerUnit)) : data.qty) + ' ' + productVariant.unit + '</div>' +
                             '</div>' +
                         '</div>'
                     );
                 }
-            });
+            }
         }
 
         function initDeleteProduct() {
