@@ -36,6 +36,15 @@ export class ProductService {
         });
     }
 
+    async isExists(code: String): Promise<boolean> {
+        const products = await this.productRepository.find({
+            where: {
+                code: code
+            }
+        });
+        return products.length > 0;
+    }
+
     async findAll(query: FindAllProductDTO): Promise<Product[]> {
         const take = query.size ? query.size : 10;
         const skip = query.page ? (query.page - 1) * take : 0;

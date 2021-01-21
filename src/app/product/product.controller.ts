@@ -143,10 +143,10 @@ export class ProductController {
         // Validate request
         await check("code")
             .notEmpty().bail().withMessage("Code field is required!")
-            .isLength({min: 6}).bail().withMessage("Code field length minimum 6 characters!")
+            .isLength({min: 3}).bail().withMessage("Code field length minimum 3 characters!")
             .custom(async value => {
-                const product = await new ProductService().findAll({code: value});
-                if (product.length > 0) {
+                const product = await new ProductService().isExists(value);
+                if (product) {
                     return Promise.reject("Code already in use!")
                 }
             })
