@@ -65,6 +65,7 @@ export class ProductDetailService {
     }
 
     async store(body: StoreProductDetailDTO): Promise<ProductDetail|undefined> {
+        console.log(body);
         const product = await this.productService.findOne(body.productId)
         const child = body.childId ? await this.productDetailRepository.findOne(body.childId) : null;
         if (product) {
@@ -73,7 +74,7 @@ export class ProductDetailService {
             productDetail.unit = body.unit;
             productDetail.qtyPerUnit = body.qtyPerUnit;
             productDetail.price = body.price;
-            productDetail.isParent = body.isParent ? true : false;
+            productDetail.isParent = body.isParent;
             if (child) productDetail.child = child;
             const result = await this.productDetailRepository.save(productDetail);
             return result;
@@ -89,7 +90,7 @@ export class ProductDetailService {
             productDetail.unit = body.unit;
             productDetail.qtyPerUnit = body.qtyPerUnit;
             productDetail.price = body.price;
-            productDetail.isParent = +body.isParent ? true : false;
+            productDetail.isParent = body.isParent;
             productDetail.child = child ? child : null;
             const result = await this.productDetailRepository.save(productDetail);
             return result;
