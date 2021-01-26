@@ -348,6 +348,7 @@
                         $("input").removeClass("is-invalid");
                         $("select").removeClass("is-invalid");
                         alert("Perubahan tersimpan");
+                        window.location.href = "/product";
                     },
                     error: function(error) {
                         errors = error.responseJSON.errors;
