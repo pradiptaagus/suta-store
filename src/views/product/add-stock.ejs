@@ -56,6 +56,7 @@
     <script src="/js/helper.js"></script>
     <script>
         let data = {};
+        let additionQty = 0;
 
         $("document").ready(function() {
             fetchData("<%=id%>");
@@ -121,14 +122,15 @@
         // Calculate new stock
         // Formula: if productVariant have child, newQty = oldQty + additionQty. 
         // Else, newQty = oldQty + Math.floor(additionQty / qtyPerUnit)
-        function calculateNewStock(additionQty) {
+        function calculateNewStock(qty) {
             let qtyPerUnits = data.productVariant.map((item) => item.qtyPerUnit);
             qtyPerUnits.forEach((item) => {
-                additionQty = additionQty * item
+                qty = qty * item
             });
 
             const oldQty = data.qty;
-            const currentQuantity = oldQty + additionQty;
+            const currentQuantity = oldQty + qty;
+            additionQty = qty;
 
             let realQuantityPerUnits = [];
 
@@ -142,7 +144,6 @@
                 realQuantityPerUnits.push(temp);
             }
 
-            console.log("currentQuantity: ", currentQuantity);
             for (let i = 0; i < data.productVariant.length; i++) {
                 const newQty = Math.floor(currentQuantity / realQuantityPerUnits[i]);
                 $("#new-stock-"+i).text(newQty + " " + data.productVariant[i].unit);
