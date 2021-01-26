@@ -27,7 +27,7 @@
                     <div class="invalid-feedback" id="nameError"></div>
                 </div>
             </div>
-            <div class="form-group row">
+            <div class="form-group row" hidden>
                 <label for="qty" class="col-12 col-md-3 col-form-label">Stok</label>
                 <div class="col-9">
                     <input class="form-control input-stock" type="text" id="qty" name="qty" placeholder="Contoh: 10">
@@ -162,6 +162,24 @@
                         }
                     }
                     productVariantData = productVariantTemp;
+                    let newProductVariantData = productVariantData.map(item => {
+                        return {
+                            ...item
+                        }
+                    });
+                    productVariantData.forEach((item, index) => {
+                        if (item.childIndex !== "") {
+                            newProductVariantData[+item.childIndex].childIndex = index;
+                            newProductVariantData[+item.childIndex].qtyPerUnit = item.qtyPerUnit;
+                            
+                        } else {
+                            newProductVariantData[0].childIndex = "";
+                            newProductVariantData[0].qtyPerUnit = item.qtyPerUnit;
+                        }
+                    });
+                    console.table(productVariantData);
+                    console.table(newProductVariantData);
+                    productVariantData = newProductVariantData;
                     renderProductVariant(productVariantData);
                 }, error: function(error) {
                     console.log(error);
@@ -232,6 +250,9 @@
             initAllowNumberOnly();
             initMoneyFormat();
             setVariantsUnit();
+            if(productVariants[0].isParent == "1") {
+                $("#unitArea-0").hide()
+            }
         }
 
         function renderAddVariant() {
@@ -312,11 +333,13 @@
                         unit.value
                     ));
                     availableValues.push(unit.value);
-                })
-                child.append(new Option("Tidak ada", ""))
-                const found = availableValues.findIndex(v => v == selectedValue);
-                if(found === -1) {
+                });
+                if (index === 0) {
+                    child.append(new Option("Tidak ada", ""));
                     selectedValue = "";
+                } else if (selectedValue === "") {
+                    productVariantData[index].childIndex = index - 1;
+                    selectedValue = index - 1;
                 }
                 $(child).val(selectedValue);
             })
@@ -332,6 +355,16 @@
                         price: productVariantData[i].price
                     });
                 }
+
+                let newProductVariants = [...productVariants];
+                productVariants.forEach((variant, index) => {
+                    if(variant.chindIndex != "") {
+                        newProductVariants[+variant.childIndex].childIndex = index;
+                        newProductVariants[+variant.childIndex].qtyPerUnit = variant.qtyPerUnit
+                        newProductVariants[index].childIndex = "";
+                        newProductVariants[index].qtyPerUnit = 1;                        
+                    }
+                });
                 
                 $.ajax({
                     method: "put",
@@ -348,7 +381,7 @@
                         $("input").removeClass("is-invalid");
                         $("select").removeClass("is-invalid");
                         alert("Perubahan tersimpan");
-                        window.location.href = "/product";
+                        // window.location.href = "/product";
                     },
                     error: function(error) {
                         errors = error.responseJSON.errors;
