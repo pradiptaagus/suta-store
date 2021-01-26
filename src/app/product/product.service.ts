@@ -36,10 +36,20 @@ export class ProductService {
         });
     }
 
-    async isExists(code: String): Promise<boolean> {
+    async isExists(code: string): Promise<boolean> {
         const products = await this.productRepository.find({
             where: {
                 code: code
+            }
+        });
+        return products.length > 0;
+    }
+
+    async isExistsExcept(code: string, id: string): Promise<boolean> {
+        const products = await this.productRepository.find({
+            where: {
+                code: code,
+                id: Not(id)
             }
         });
         return products.length > 0;
@@ -74,7 +84,6 @@ export class ProductService {
         });
         
         if (products) {
-            console.log("tes")
             products.map(product => {
                 this.sortProductVariant(product.productVariant);
             })

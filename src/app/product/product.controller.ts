@@ -247,7 +247,7 @@ export class ProductController {
                 price: productVariantsTemp[i].productVariant.price,
                 unit: productVariantsTemp[i].productVariant.unit,
                 isParent: productVariantsTemp[i].productVariant.isParent,
-                childId: productVariants[i].childIndex ? productVariantsTemp[productVariants[i].childIndex - 1].productVariant.id : ""
+                childId: productVariants[i].childIndex ? productVariantsTemp[productVariants[i].childIndex].productVariant.id : ""
             }
 
             const updateProductVariantResult = await new ProductDetailService().update(productVariantBody, productVariantsTemp[i].productVariant.id);
@@ -290,13 +290,11 @@ export class ProductController {
         // Validate request
         await check("code")
             .notEmpty().bail().withMessage("Code field is required!")
-            .isLength({min: 6}).bail().withMessage("Code field length minimum 6 characters!")
+            .isLength({min: 3}).bail().withMessage("Code field length minimum 6 characters!")
             .custom(async value => {
-                const product = await (await new ProductService().findAll({code: value})).filter(item => {
-                    return item.id !== id;
-                });
-                if (product.length > 0) {
-                    return Promise.reject("Code is already in use!")
+                const product = await new ProductService().isExistsExcept(value, id);
+                if (product) {
+                    return Promise.reject("Code already in use!")
                 }
             })
             .run(req);
@@ -425,7 +423,7 @@ export class ProductController {
                 price: productVariantsTemp[i].productVariant.price,
                 unit: productVariantsTemp[i].productVariant.unit,
                 isParent: productVariantsTemp[i].productVariant.isParent,
-                childId: productVariants[i].childIndex ? productVariantsTemp[productVariants[i].childIndex - 1].productVariant.id : ""
+                childId: productVariants[i].childIndex ? productVariantsTemp[productVariants[i].childIndex].productVariant.id : ""
             }
             const updateProductVariantResult = await new ProductDetailService().update(updateProductVariantBody, productVariantsTemp[i].productVariant.id);
         }

@@ -204,7 +204,7 @@
                 const currentUnit = $("input[name='unit["+index+"]']").val();
                 units.forEach(unit => {
                     const variant = unit.label === "" ? "Variant " + (unit.value+1) : unit.label;
-                    child.append(new Option(currentUnit + "/" + variant, unit.value));
+                    child.append(new Option(variant + "/" + currentUnit, unit.value));
                     availableValues.push(unit.value);
                 })
                 child.append(new Option("Tidak ada", ""))
@@ -226,15 +226,6 @@
                         price: productVariantData[i].price.replace(/,/g, "")
                     });
                 }
-                
-                let newProductVariants = [...productVariants];
-
-                productVariants.forEach((variant, index) => {
-                    if(variant.chindIndex != "") {
-                        newProductVariants[+variant.childIndex].childIndex = index;
-                        newProductVariants[index].childIndex = "";
-                    }
-                });
 
                 $.ajax({
                     method: "post",
@@ -245,7 +236,7 @@
                         storageType: $("#storageType").val(),
                         qty: $("#qty").val(),
                         storageType: $("#storageType").val(),
-                        productVariants: newProductVariants
+                        productVariants: productVariants
                     },
                     success: function(result) {
                         alert("Data tersimpan");

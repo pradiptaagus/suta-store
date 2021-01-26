@@ -305,8 +305,13 @@
                 let selectedValue = productVariantData[index].childIndex;
                 $(child).empty();
                 const availableValues = [];
+                const currentUnit = $("input[name='unit["+index+"]']").val() || productVariantData[index]["unit"];
                 units.forEach(unit => {
-                    child.append(new Option(unit.label === "" ? "Variant " + (unit.value+1) : unit.label, unit.value));
+                    const variant = unit.label === "" ? "Variant " + (unit.value+1) : unit.label;
+                    child.append(new Option(
+                        variant + "/" + currentUnit, 
+                        unit.value
+                    ));
                     availableValues.push(unit.value);
                 })
                 child.append(new Option("Tidak ada", ""))
