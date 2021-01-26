@@ -90,13 +90,11 @@
         }
 
         function renderProductVariant(data) {
-            console.log(data.qty)
             const el = $("#variant");
             el.html("");
             for (let i = 0; i < data.productVariant.length; i++) {
                 const productVariant = data.productVariant[i];
                 const childProductVariant = data.productVariant[i].child;
-                console.log(productVariant, childProductVariant)
                 if (productVariant.child) {
                     console.log(`${data.qty} / (${productVariant.qtyPerUnit} * ${childProductVariant.qtyPerUnit})`)
                     console.log(data.qty / (productVariant.qtyPerUnit * childProductVariant.qtyPerUnit))

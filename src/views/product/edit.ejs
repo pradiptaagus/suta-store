@@ -173,7 +173,6 @@
             const el = $("#variant");
             el.html("");
             productVariants.forEach((productVariant, index) => {
-                console.log(productVariant.isParent === "1")
                 if (!productVariant.deletedAt) {
                     el.append(
                         '<div id="productVariants['+index+']" class="border rounded py-2 px-3 w-100 mb-3">' +
