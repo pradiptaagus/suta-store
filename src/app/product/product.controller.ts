@@ -252,7 +252,7 @@ export class ProductController {
                 price: productVariantsTemp[i].productVariant.price,
                 unit: productVariantsTemp[i].productVariant.unit,
                 isParent: productVariantsTemp[i].productVariant.isParent,
-                childId: productVariants[i].childIndex ? productVariantsTemp[productVariants[i].childIndex].productVariant.id : ""
+                childId: productVariants[i].childIndex ? productVariantsTemp[productVariants[i].childIndex - 1].productVariant.id : ""
             }
 
             const updateProductVariantResult = await new ProductDetailService().update(productVariantBody, productVariantsTemp[i].productVariant.id);
@@ -377,9 +377,7 @@ export class ProductController {
                 // Store product detail
                 const productVariantBody: StoreProductDetailDTO = {
                     productId: product.id,
-                    qtyPerUnit: productVariants[i].childIndex ? 
-                        productVariants[i].qtyPerUnit * productVariants[productVariants[i].childIndex].qtyPerUnit : 
-                        productVariants[i].qtyPerUnit,
+                    qtyPerUnit: productVariants[i].qtyPerUnit,
                     price: productVariants[i].price,
                     unit: productVariants[i].unit,
                     isParent: productVariants[i].isParent
@@ -399,9 +397,7 @@ export class ProductController {
                 if (!productVariant) continue;
                 const productVariantBody: UpdateProductDetailDTO = {
                     productId: product.id,
-                    qtyPerUnit: productVariants[i].childIndex ? 
-                        productVariants[i].qtyPerUnit * productVariants[productVariants[i].childIndex].qtyPerUnit : 
-                        productVariants[i].qtyPerUnit,
+                    qtyPerUnit: productVariants[i].qtyPerUnit,
                     price: productVariants[i].price,
                     unit: productVariants[i].unit,
                     isParent: productVariants[i].isParent
@@ -428,7 +424,7 @@ export class ProductController {
                 price: productVariantsTemp[i].productVariant.price,
                 unit: productVariantsTemp[i].productVariant.unit,
                 isParent: productVariantsTemp[i].productVariant.isParent,
-                childId: productVariants[i].childIndex ? productVariantsTemp[productVariants[i].childIndex].productVariant.id : ""
+                childId: productVariants[i].childIndex ? productVariantsTemp[productVariants[i].childIndex - 1].productVariant.id : ""
             }
             const updateProductVariantResult = await new ProductDetailService().update(updateProductVariantBody, productVariantsTemp[i].productVariant.id);
         }
