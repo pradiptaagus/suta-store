@@ -24,6 +24,7 @@ export class ProductController {
         this.router.put(`${this.path}/:id`, this.update);
         this.router.delete(`${this.path}/:id`, this.delete);
         this.router.get(this.viewPath, this.index);
+        this.router.get(`${this.viewPath}/stock-management`, this.stockManagement);
         this.router.get(`${this.viewPath}/new`, this.add);
         this.router.get(`${this.viewPath}/edit/:id`, this.edit);
         this.router.get(`${this.viewPath}/add-stock/:id`, this.addStockView);
@@ -48,6 +49,10 @@ export class ProductController {
         res.render("product/detail.ejs", {
             id: req.params.id
         });
+    }
+
+    stockManagement(req: Request, res: Response) {
+        res.render("product/stock-management");
     }
 
     addStockView(req: Request, res: Response) {
