@@ -137,6 +137,9 @@
             initAllowNumberOnly();
             initMoneyFormat();
             setVariantsUnit();
+            if(productVariants[0].isParent == "1") {
+                $("#unitArea-0").hide()
+            }
         }
 
         function renderAddVariant() {
@@ -204,16 +207,18 @@
                 const currentUnit = $("input[name='unit["+index+"]']").val();
                 units.forEach(unit => {
                     const variant = unit.label === "" ? "Variant " + (unit.value+1) : unit.label;
-                    child.append(new Option(variant + "/" + currentUnit, unit.value));
+                    child.append(new Option(currentUnit + "/" + variant, unit.value));
                     availableValues.push(unit.value);
-                })
-                child.append(new Option("Tidak ada", ""))
-                const found = availableValues.findIndex(v => v == selectedValue);
-                if(found == -1) {
+                });
+                if (index === 0) {
+                    child.append(new Option("Tidak ada", ""));
                     selectedValue = "";
+                } else if (selectedValue === "") {
+                    productVariantData[index].childIndex = index - 1;
+                    selectedValue = index - 1;
                 }
                 $(child).val(selectedValue);
-            })
+            });
         }
 
         function initSave() {
@@ -227,6 +232,16 @@
                     });
                 }
 
+                let newProductVariants = [...productVariants];
+                productVariants.forEach((variant, index) => {
+                    if(variant.chindIndex != "") {
+                        newProductVariants[+variant.childIndex].childIndex = index;
+                        newProductVariants[+variant.childIndex].qtyPerUnit = variant.qtyPerUnit
+                        newProductVariants[index].childIndex = "";
+                        newProductVariants[index].qtyPerUnit = 1;                        
+                    }
+                });
+
                 $.ajax({
                     method: "post",
                     url: "/api/product",
@@ -236,13 +251,18 @@
                         storageType: $("#storageType").val(),
                         qty: $("#qty").val(),
                         storageType: $("#storageType").val(),
-                        productVariants: productVariants
+                        productVariants: newProductVariants.map((item) => {
+                            return {
+                                ...item,
+                                isParent: item.isParent === "1" ? 1 : 0
+                            }
+                        })
                     },
                     success: function(result) {
                         alert("Data tersimpan");
                         $("input").removeClass("is-invalid");
                         $("select").removeClass("is-invalid");
-                        window.location.href = "/product";
+                        // window.location.href = "/product";
                     },
                     error: function(error) {
                         alert("Gagal menyimpan data!");
