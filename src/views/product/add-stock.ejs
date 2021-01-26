@@ -37,7 +37,7 @@
                 <label for="addition-stock" class="col-12 col-md-3 col-form-label">Stok yang ditambahkan</label>
                 <div class="col-9">
                     <input class="form-control input-stock" type="text" name="addition-stock" id="addition-stock" placeholder="Contoh: 100" data-numberonly="true" onkeyup="handleAdditionQtyChange(this)">
-                    <small>Jumlah stok yang ditambahkan mengikuti satuan terkecil</small>
+                    <small>Jumlah stok yang ditambahkan mengikuti satuan terbesar</small>
                     <div class="invalid-feedback" id="addition-stock-error"></div>
                 </div>
             </div>
@@ -55,7 +55,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js"></script>
     <script src="/js/helper.js"></script>
     <script>
-        let additionQty = 0;
         let data = {};
 
         $("document").ready(function() {
@@ -97,7 +96,7 @@
                             '</div>' +
                             '<div class="row mb-3">' +
                                 '<div class="col-md-5">Harga</div>' +
-                                '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> ' + (new Intl.NumberFormat('en-US', {style: "currency", currency: "IDR"}).format(productVariant.price)) + '</div>' +
+                                '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> ' + (rupiahFormat(productVariant.price)) + '</div>' +
                             '</div>' +
                             '<div class="row">' +
                                 '<div class="col-md-5">Stok lama</div>' +
@@ -116,27 +115,38 @@
         function handleAdditionQtyChange(e) {
             const el = $(e);
             const value = +el.val();
-            additionQty = value;
-            calculateNewStock();
+            calculateNewStock(value);
         }
 
         // Calculate new stock
         // Formula: if productVariant have child, newQty = oldQty + additionQty. 
         // Else, newQty = oldQty + Math.floor(additionQty / qtyPerUnit)
-        function calculateNewStock() {
-            const greatesQtyPerUnit = data.productVariant.reduce((item) => {
-                if (item.isParent) return item;
+        function calculateNewStock(additionQty) {
+            let qtyPerUnits = data.productVariant.map((item) => item.qtyPerUnit);
+            qtyPerUnits.forEach((item) => {
+                additionQty = additionQty * item
             });
-            console.log(greatesQtyPerUnit);
-            data.productVariant.forEach(function(productVariant, index) {
-                const oldQty = productVariant.child ? Math.floor(data.qty / productVariant.qtyPerUnit) : data.qty;
-                let addition = 0;
-                if (additionQty > 0) {
-                    addition = productVariant.child ? Math.floor(+additionQty / productVariant.qtyPerUnit) : additionQty;
+
+            const oldQty = data.qty;
+            const currentQuantity = oldQty + additionQty;
+
+            let realQuantityPerUnits = [];
+
+            for (let i = 0; i < qtyPerUnits.length; i++) {
+                let temp = qtyPerUnits[i];
+
+                for (let j = i + 1; j < qtyPerUnits.length; j++) {
+                    temp = temp * qtyPerUnits[j];
                 }
-                const newQty = oldQty + addition;
-                $("#new-stock-"+index).text(newQty + " " + productVariant.unit);
-            })
+
+                realQuantityPerUnits.push(temp);
+            }
+
+            console.log("currentQuantity: ", currentQuantity);
+            for (let i = 0; i < data.productVariant.length; i++) {
+                const newQty = Math.floor(currentQuantity / realQuantityPerUnits[i]);
+                $("#new-stock-"+i).text(newQty + " " + data.productVariant[i].unit);
+            }
         }
 
         function initSave() {
