@@ -49,9 +49,9 @@
                         <th class="border-top-0" style="width: 120px;">Satuan</th>
                         <th class="border-top-0" style="width: 200px;">Harga satuan</th>
                         <th class="border-top-0" style="width: 100px">Jumlah</th>
-                        <th class="border-top-0" style="width: 150px">Diskon (IDR)</th>
-                        <th class="border-top-0" style="width: 160px;">Harga akhir (IDR)</th>
-                        <th class="border-top-0" style="width: 200px;">Total</th>
+                        <!-- <th class="border-top-0" style="width: 150px">Diskon (IDR)</th> -->
+                        <!-- <th class="border-top-0" style="width: 160px;">Harga akhir (IDR)</th> -->
+                        <th class="border-top-0" style="width: 200px;">Sub total</th>
                         <th class="border-top-0 border-right-0 text-center" style="width: 85px">Aksi</th>
                     </tr>
                 </thead>
@@ -245,16 +245,18 @@
                             '</div>'+
                             '<div class="invalid-feedback" id="qty-error-'+index+'"></div>'+
                         '</td>'+
-                        '<td>'+
-                            '<input class="form-control form-control-sm" type="text" name="discount['+index+']" id="discount['+index+']" value="'+(moneyFormat(transactionDetail.discount))+'" data-key="discount" data-index="'+index+'" data-numberonly="true" data-moneyformat="true" onkeyup="handleChangeTransactionDetailDiscount(this)" style="width: 120px;">'+
-                            '<div class="invalid-feedback" id="discount-error"></div>'+
-                        '</td>'+
-                        '<td>' +
-                            '<input class="form-control form-control-sm" type="text" name="given-price['+index+']" id="given-price['+index+']" value="'+(moneyFormat(transactionDetail.givenPrice))+'" data-key="givenPrice" data-index="'+index+'" data-numberonly="true" data-moneyformat="true" style="width: 130px;" onkeyup="handleChangeProductPrice(this)">'+
-                            '<div class="invalid-feedback" id="given-price-error"></div>'+
-                        '</td>' +
+                        // '<td>'+
+                        //     '<input class="form-control form-control-sm" type="text" name="discount['+index+']" id="discount['+index+']" value="'+(moneyFormat(transactionDetail.discount))+'" data-key="discount" data-index="'+index+'" data-numberonly="true" data-moneyformat="true" onkeyup="handleChangeTransactionDetailDiscount(this)" style="width: 120px;">'+
+                        //     '<div class="invalid-feedback" id="discount-error"></div>'+
+                        // '</td>'+
+                        // '<td>' +
+                        //     '<input class="form-control form-control-sm" type="text" name="given-price['+index+']" id="given-price['+index+']" value="'+(moneyFormat(transactionDetail.givenPrice))+'" data-key="givenPrice" data-index="'+index+'" data-numberonly="true" data-moneyformat="true" style="width: 130px;" onkeyup="handleChangeProductPrice(this)">'+
+                        //     '<div class="invalid-feedback" id="given-price-error"></div>'+
+                        // '</td>' +
                         '<td class="border-right-0">' +
-                            '<span id="subTotal-'+index+'">'+rupiahFormat(transactionDetail.subTotal)+'</span>' +
+                            // '<span id="subTotal-'+index+'">'+rupiahFormat(transactionDetail.subTotal)+'</span>' +
+                            '<input class="form-control form-control-sm" type="text" name="sub-total['+index+']" id="sub-total['+index+']" value="'+(moneyFormat(transactionDetail.subTotal))+'" data-key="givenPrice" data-index="'+index+'" data-numberonly="true" data-moneyformat="true" style="width: 130px;" onkeyup="handleChangeProductSubTotal(this)">'+
+                            '<div class="invalid-feedback" id="given-price-error"></div>'+
                         '</td>'+
                         '<td class="text-center">'+
                             '<button class="btn btn-danger btn-sm removeTransactionItemBtn" data-index="'+index+'">Hapus</button>' +    
@@ -365,6 +367,7 @@
                         transactionDetails[index].discount, 
                         transactionDetails[index].qty
                     );
+                    $("input[name='sub-total["+index+"]']").val(moneyFormat(transactionDetails[index].subTotal));
                     renderSubTotal(index, transactionDetails[index].subTotal);
 
                     // Calculate and render transaction total
@@ -411,6 +414,7 @@
                         transactionDetails[index].discount, 
                         transactionDetails[index].qty
                     );
+                    $("input[name='sub-total["+index+"]']").val(moneyFormat(transactionDetails[index].subTotal));
                     renderSubTotal(index, transactionDetails[index].subTotal);
 
                     // Calculate and render transaction total
@@ -452,6 +456,7 @@
                     transactionDetails[index].discount, 
                     transactionDetails[index].qty
                 );
+                $("input[name='sub-total["+index+"]']").val(moneyFormat(transactionDetails[index].subTotal));
                 renderSubTotal(index, transactionDetails[index].subTotal);
 
                 // Calculate and render transaction total
@@ -481,6 +486,7 @@
                     transactionDetails[index].discount, 
                     transactionDetails[index].qty
                 );
+                $("input[name='sub-total["+index+"]']").val(moneyFormat(transactionDetails[index].subTotal));
                 renderSubTotal(index, transactionDetails[index].subTotal);
 
                 // Calculate and render transaction total
@@ -625,6 +631,35 @@
             renderGrandTotal();
 
             // Calculate and render cash back amount
+            cashBackAmount = calculateCashBackAmount();
+            renderCashBackAmount();
+        }
+
+        function handleChangeProductSubTotal(e) {
+            const el = $(e);
+            const index = el.data("index");
+            const subTotal = el.val().replace(/,/g, "");
+            const givenPrice = +subTotal / transactionDetails[index].qty;
+            transactionDetails[index].givenPrice = +givenPrice;
+            transactionDetails[index].discount = transactionDetails[index]["productVariant"].price - (+givenPrice);
+
+            // Calculate and render sub total
+            transactionDetails[index].subTotal = calculateSubTotal(
+                transactionDetails[index]["productVariant"].price, 
+                transactionDetails[index].discount, 
+                transactionDetails[index].qty
+            );
+            renderSubTotal(index, transactionDetails[index].subTotal);
+
+            // // Calculate and render transaction total
+            transactionTotal = calculateTransactionTotal();
+            renderTransactionTotal();
+
+            // // Calculate and render grand transaction total
+            grandTransactionTotal = calculateGrandTotal();
+            renderGrandTotal();
+
+            // // Calculate and render cash back amount
             cashBackAmount = calculateCashBackAmount();
             renderCashBackAmount();
         }
