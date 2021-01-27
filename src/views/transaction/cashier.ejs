@@ -51,7 +51,7 @@
                         <th class="border-top-0" style="width: 100px">Jumlah</th>
                         <!-- <th class="border-top-0" style="width: 150px">Diskon (IDR)</th> -->
                         <!-- <th class="border-top-0" style="width: 160px;">Harga akhir (IDR)</th> -->
-                        <th class="border-top-0" style="width: 200px;">Sub total</th>
+                        <th class="border-top-0" style="width: 200px;">Sub total (Rp)</th>
                         <th class="border-top-0 border-right-0 text-center" style="width: 85px">Aksi</th>
                     </tr>
                 </thead>
@@ -158,7 +158,6 @@
                 current.getFullYear() + "-" + 
                 ((current.getMonth() + 1 < 10) ? "0" + (current.getMonth() + 1) : (current.getMonth() + 1)) + "-" + 
                 (current.getDate() < 10 ? "0" + current.getDate() : current.getDate());
-            console.log(currentDate)
             $("#date").val(currentDate);
         }
 
@@ -255,8 +254,8 @@
                         // '</td>' +
                         '<td class="border-right-0">' +
                             // '<span id="subTotal-'+index+'">'+rupiahFormat(transactionDetail.subTotal)+'</span>' +
-                            '<input class="form-control form-control-sm" type="text" name="sub-total['+index+']" id="sub-total['+index+']" value="'+(moneyFormat(transactionDetail.subTotal))+'" data-key="givenPrice" data-index="'+index+'" data-numberonly="true" data-moneyformat="true" style="width: 130px;" onkeyup="handleChangeProductSubTotal(this)">'+
-                            '<div class="invalid-feedback" id="given-price-error"></div>'+
+                            '<input class="form-control form-control-sm" type="text" name="sub-total['+index+']" id="sub-total['+index+']" value="'+(moneyFormat(transactionDetail.subTotal))+'" data-key="subTotal" data-index="'+index+'" data-numberonly="true" data-moneyformat="true" style="width: 130px;" onkeyup="handleChangeProductSubTotal(this)">'+
+                            '<div class="invalid-feedback" id="sub-total-error"></div>'+
                         '</td>'+
                         '<td class="text-center">'+
                             '<button class="btn btn-danger btn-sm removeTransactionItemBtn" data-index="'+index+'">Hapus</button>' +    
@@ -348,18 +347,25 @@
                     transactionDetails[index]["id"] = result.data.id;
                     transactionDetails[index]["code"] = result.data.code;
                     transactionDetails[index]["name"] = result.data.name;
-                    transactionDetails[index]["productVariant"]["id"] = result.data.productVariant[0].id;
-                    transactionDetails[index]["productVariant"]["unit"] = result.data.productVariant[0].unit;
-                    transactionDetails[index]["productVariant"]["qtyPerUnit"] = result.data.productVariant[0].qtyPerUnit;
-                    transactionDetails[index]["productVariant"]["price"] = result.data.productVariant[0].price;
+                    
+                    if (transactionDetails[index]["productVariant"].id === null) {
+                        transactionDetails[index]["productVariant"]["id"] = result.data.productVariant[0].id;
+                        transactionDetails[index]["productVariant"]["unit"] = result.data.productVariant[0].unit;
+                        transactionDetails[index]["productVariant"]["qtyPerUnit"] = result.data.productVariant[0].qtyPerUnit;
+                        transactionDetails[index]["productVariant"]["price"] = result.data.productVariant[0].price;
+                    }
 
                     // Set variant options
+                    const selectedVariant = transactionDetails[index]["productVariant"];
                     result.data.productVariant.forEach((item, indx) => {
-                        $("select[name='variant["+index+"]']").append(new Option(item.unit, item.id, true, indx === 0));
+                        $("select[name='variant["+index+"]']").append(new Option(item.unit, item.id, false, selectedVariant.id === item.id));
                     });
 
                     $("#code-"+index).text(result.data.code);
-                    $("#price-"+index).text(rupiahFormat(result.data.productVariant[0].price) + "/" + result.data.productVariant[0].unit);
+                    $("#price-"+index).text(rupiahFormat(
+                        transactionDetails[index]["productVariant"]["price"]) + 
+                        (transactionDetails[index]["productVariant"].unit ? "/" + transactionDetails[index]["productVariant"].unit : "")
+                    );
 
                     // Calculate and render sub total
                     transactionDetails[index].subTotal = calculateSubTotal(
@@ -367,7 +373,7 @@
                         transactionDetails[index].discount, 
                         transactionDetails[index].qty
                     );
-                    $("input[name='sub-total["+index+"]']").val(moneyFormat(transactionDetails[index].subTotal));
+
                     renderSubTotal(index, transactionDetails[index].subTotal);
 
                     // Calculate and render transaction total
@@ -402,11 +408,11 @@
                     transactionDetails[index]["productVariant"]["qtyPerUnit"] = result.data.qtyPerUnit;
                     transactionDetails[index]["productVariant"]["price"] = result.data.price;
 
-                    // Calculate given price
-                    transactionDetails[index].givenPrice = transactionDetails[index]["productVariant"].price - transactionDetails[index].discount;
+                    transactionDetails[index].givenPrice = transactionDetails[index]["productVariant"].price;
+                    transactionDetails[index].discount = 0;
 
                     $("#price-"+index).text(rupiahFormat(result.data.price) + "/" + result.data.unit);
-                    $("input[name='given-price["+index+"]']").val(moneyFormat(result.data.price));
+                    // $("input[name='given-price["+index+"]']").val(moneyFormat(result.data.price));
                     
                     // Calculate and render sub total
                     transactionDetails[index].subTotal = calculateSubTotal(
@@ -414,7 +420,7 @@
                         transactionDetails[index].discount, 
                         transactionDetails[index].qty
                     );
-                    $("input[name='sub-total["+index+"]']").val(moneyFormat(transactionDetails[index].subTotal));
+
                     renderSubTotal(index, transactionDetails[index].subTotal);
 
                     // Calculate and render transaction total
@@ -436,7 +442,7 @@
         }
 
         function renderSubTotal(index, subTotal) {
-            $("#subTotal-"+index).text(rupiahFormat(subTotal));
+            $("input[name='sub-total["+index+"]']").val(moneyFormat(subTotal));
         }
 
         function quantityHandler() {
@@ -456,7 +462,7 @@
                     transactionDetails[index].discount, 
                     transactionDetails[index].qty
                 );
-                $("input[name='sub-total["+index+"]']").val(moneyFormat(transactionDetails[index].subTotal));
+
                 renderSubTotal(index, transactionDetails[index].subTotal);
 
                 // Calculate and render transaction total
@@ -486,7 +492,7 @@
                     transactionDetails[index].discount, 
                     transactionDetails[index].qty
                 );
-                $("input[name='sub-total["+index+"]']").val(moneyFormat(transactionDetails[index].subTotal));
+
                 renderSubTotal(index, transactionDetails[index].subTotal);
 
                 // Calculate and render transaction total
@@ -581,7 +587,7 @@
             transactionDetails[index].givenPrice = transactionDetails[index]["productVariant"].price - (+discount);
 
             // Render given price
-            $("input[name='given-price["+index+"]']").val(moneyFormat(transactionDetails[index].givenPrice));
+            // $("input[name='given-price["+index+"]']").val(moneyFormat(transactionDetails[index].givenPrice));
             
             // Calculate and render sub total
             transactionDetails[index].subTotal = calculateSubTotal(
@@ -589,6 +595,7 @@
                 transactionDetails[index].discount, 
                 transactionDetails[index].qty
             );
+
             renderSubTotal(index, transactionDetails[index].subTotal);
 
             // Calculate and render transaction total
@@ -612,7 +619,7 @@
             transactionDetails[index].discount = transactionDetails[index]["productVariant"].price - (+givenPrice);         
 
             // Render discount
-            $("input[name='discount["+index+"]']").val(moneyFormat(transactionDetails[index].discount));
+            // $("input[name='discount["+index+"]']").val(moneyFormat(transactionDetails[index].discount));
 
             // Calculate and render sub total
             transactionDetails[index].subTotal = calculateSubTotal(
@@ -620,6 +627,7 @@
                 transactionDetails[index].discount, 
                 transactionDetails[index].qty
             );
+
             renderSubTotal(index, transactionDetails[index].subTotal);
 
             // Calculate and render transaction total
@@ -649,6 +657,7 @@
                 transactionDetails[index].discount, 
                 transactionDetails[index].qty
             );
+
             renderSubTotal(index, transactionDetails[index].subTotal);
 
             // // Calculate and render transaction total
