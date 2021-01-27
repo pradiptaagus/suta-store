@@ -235,7 +235,7 @@
                             '<div class="invalid-feedback" id="varian-error-'+index+'"></div> '+
                         '</td>'+
                         '<td>'+
-                            '<span id="price-'+index+'">'+ rupiahFormat(transactionDetail.productVariant.price) +
+                            '<span id="price-'+index+'">'+ rupiahFormat(transactionDetail.productVariant.price) + (transactionDetail?.productVariant?.unit ? "/" + transactionDetail?.productVariant?.unit : "") + 
                             '</span></td>'+
                         '<td>'+
                             '<div class="d-flex">'+
@@ -405,8 +405,8 @@
                     // Calculate given price
                     transactionDetails[index].givenPrice = transactionDetails[index]["productVariant"].price - transactionDetails[index].discount;
 
-                    $("#price-"+index).text(rupiahFormat(result.data.price));
-                    $("input[name='given-price["+index+"]']").val(moneyFormat(transactionDetails[index].givenPrice));
+                    $("#price-"+index).text(rupiahFormat(result.data.price) + "/" + result.data.unit);
+                    $("input[name='given-price["+index+"]']").val(moneyFormat(result.data.price));
                     
                     // Calculate and render sub total
                     transactionDetails[index].subTotal = calculateSubTotal(
