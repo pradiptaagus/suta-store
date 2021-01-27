@@ -65,7 +65,6 @@ export class ProductDetailService {
     }
 
     async store(body: StoreProductDetailDTO): Promise<ProductDetail|undefined> {
-        console.log(body);
         const product = await this.productService.findOne(body.productId)
         const child = body.childId ? await this.productDetailRepository.findOne(body.childId) : null;
         if (product) {
