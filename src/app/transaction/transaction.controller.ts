@@ -12,7 +12,7 @@ import { ResponseBuilder } from "../../helpers/response-builder.helper";
 import { DateGenerator } from "../../helpers/date-generator.helper";
 import path from "path";
 import fs from "fs";
-import ExcelJS from "ExcelJS";
+import ExcelJS from "exceljs";
 
 export class TransactionController {
     private path: string = "/api/transaction";
