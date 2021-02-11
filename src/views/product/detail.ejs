@@ -70,6 +70,12 @@
             fetchData("<%=id%>");
         });
 
+        function capitalize(str) {
+            let res = str.toLowerCase()
+            res = str[0].toUpperCase() + res.substring(1);
+            return res;
+        }
+
         function fetchData(id) {
             $.ajax({
                 method: "get",
@@ -82,6 +88,7 @@
                     $("#storageType").text(data.storageType);
 
                     renderProductVariant(data)
+                    calculateOldStock(data);
 
                 }, error: function(error) {
                     console.log(error);
@@ -95,12 +102,6 @@
             for (let i = 0; i < data.productVariant.length; i++) {
                 const productVariant = data.productVariant[i];
                 const childProductVariant = data.productVariant[i].child;
-                if (productVariant.child) {
-                    console.log(`${data.qty} / (${productVariant.qtyPerUnit} * ${childProductVariant.qtyPerUnit})`)
-                    console.log(data.qty / (productVariant.qtyPerUnit * childProductVariant.qtyPerUnit))
-                } else {
-                    console.log(productVariant.qtyPerUnit)
-                }
 
                 if (!productVariant.deletedAt) {
                     el.append(
@@ -116,11 +117,35 @@
                             '</div>' +
                             '<div class="row">' +
                                 '<div class="col-md-5">Stok</div>' +
-                                '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> ' + (productVariant.child ? Math.floor(data.qty / (productVariant.qtyPerUnit * childProductVariant.qtyPerUnit)) : data.qty) + ' ' + productVariant.unit + '</div>' +
+                                '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> <span id="stock-' + i + '"></span></div>' +
                             '</div>' +
                         '</div>'
                     );
                 }
+            }
+        }
+
+        function calculateOldStock(data) {
+            let qtyPerUnits = data.productVariant.map((item) => item.qtyPerUnit);
+            const isStore = $("#storageType").val() == "store";
+
+            const currentQuantity = (isStore) ? data.qtyStore : data.qtyWarehouse;
+
+            let realQuantityPerUnits = [];
+
+            for (let i = 0; i < qtyPerUnits.length; i++) {
+                let temp = qtyPerUnits[i];
+
+                for (let j = i + 1; j < qtyPerUnits.length; j++) {
+                    temp = temp * qtyPerUnits[j];
+                }
+
+                realQuantityPerUnits.push(temp);
+            }
+
+            for (let i = 0; i < data.productVariant.length; i++) {
+                const newQty = Math.floor(currentQuantity / realQuantityPerUnits[i]);
+                $("#stock-"+i).text(newQty + " (" + capitalize(data.productVariant[i].unit) + ")");
             }
         }
 

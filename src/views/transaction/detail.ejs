@@ -93,6 +93,12 @@
             });
         }
 
+        function capitalize(str) {
+            let res = str.toLowerCase()
+            res = str[0].toUpperCase() + res.substring(1);
+            return res;
+        }
+
         function renderTransactionDetail(productSnapshots) {
             const el = $("#transactionDetails");
             el.html("");
@@ -116,7 +122,7 @@
                             '</div>' +
                             '<div class="row mb-3">' +
                                 '<div class="col-md-3 font-weight-bold">Jumlah</div>' +
-                                '<div class="col-md-9"><span class="d-none d-md-inline-block">:</span> '+productSnapshot.qty+' '+productSnapshot.unit+'</div>' +
+                                '<div class="col-md-9"><span class="d-none d-md-inline-block">:</span> '+productSnapshot.qty+' ('+capitalize(productSnapshot.unit)+')</div>' +
                             '</div>' +
                             '<div class="row mb-3">' +
                                 '<div class="col-md-3 font-weight-bold">Harga awal</div>' +
