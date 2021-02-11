@@ -13,6 +13,7 @@ import { DateGenerator } from "../../helpers/date-generator.helper";
 import path from "path";
 import fs from "fs";
 import ExcelJS from "exceljs";
+import { Product } from "../../database/entities/product.entity";
 
 export class TransactionController {
     private path: string = "/api/transaction";
@@ -136,7 +137,8 @@ export class TransactionController {
             productSnapshots: {
                 productVariantId: string,
                 qty: number,
-                discount: number|string
+                discount: number|string,
+                stockType: string
             }[]
         } = req.body;
 
@@ -183,6 +185,17 @@ export class TransactionController {
             .notEmpty().bail().withMessage("Product quantity field is required!")
             .isNumeric({no_symbols: true}).bail().withMessage("Product quantity field value should be number!")
             .run(req);
+        await check("productSnapshots.*.stockType")
+            .notEmpty().bail().withMessage("Stock Type field is required!")
+            .custom(value => {
+                if(["store", "warehouse"].includes(value)) {
+                    return true;
+                } else {
+                    return Promise.reject("Stock Stock must be store or warehouse")
+                }
+            })
+            .run(req);
+
         await check("productSnapshots.*.discount")
             .custom(value => {
                 switch (value) {
@@ -311,8 +324,9 @@ export class TransactionController {
              */
             const product = await new ProductService().findOne(productVariant.product.id);
             if (!product) continue;
-            const newQuantity = product.qty - (transactionDetail.qty * productVariant.qtyPerUnit);
-            const reduceProductStockResult = new ProductService().updateStock(newQuantity, product.id);
+            const qty = (transactionDetail.stockType == "store") ? product.qtyStore : product.qtyWarehouse;
+            const newQuantity = qty - (transactionDetail.qty * productVariant.qtyPerUnit);
+            const reduceProductStockResult = new ProductService().updateStock(newQuantity, product.id, transactionDetail.stockType);
             if (!reduceProductStockResult) {
                 return new ResponseBuilder().internalServerError(res);
             }
@@ -353,7 +367,8 @@ export class TransactionController {
                 id: string,
                 qty: number,
                 discount?: number,
-                productVariantId: string
+                productVariantId: string,
+                stockType: string
             }[]
         } = req.body;
         
@@ -420,6 +435,16 @@ export class TransactionController {
                     return Promise.reject(`Product variant identified by ${value} doesn't exist!`);
                 }
                 return true;
+            })
+            .run(req);
+        await check("productSnapshots.*.stockType")
+            .notEmpty().bail().withMessage("Stock Type field is required!")
+            .custom(value => {
+                if(["store", "warehouse"].includes(value)) {
+                    return true;
+                } else {
+                    return Promise.reject("Stock Stock must be store or warehouse")
+                }
             })
             .run(req);
         
@@ -538,7 +563,7 @@ export class TransactionController {
                 if (!product || !selectedProductSnapshot) continue;
 
                 const newQuantity = (product.qty + selectedProductSnapshot.qty) - (transactionDetail.qty * productVariant.qtyPerUnit);
-                const reduceProductStockResult = new ProductService().updateStock(newQuantity, product.id);
+                const reduceProductStockResult = new ProductService().updateStock(newQuantity, product.id, transactionDetail.stockType);
                 if (!reduceProductStockResult) {
                     return new ResponseBuilder().internalServerError(res);
                 }
@@ -568,7 +593,7 @@ export class TransactionController {
                 const product = await new ProductService().findOne(productVariant.product.id);
                 if (!product) continue;
                 const newQuantity = product.qty - (transactionDetail.qty * productVariant.qtyPerUnit);
-                const reduceProductStockResult = new ProductService().updateStock(newQuantity, product.id);
+                const reduceProductStockResult = new ProductService().updateStock(newQuantity, product.id, transactionDetail.stockType);
                 if (!reduceProductStockResult) {
                     return new ResponseBuilder().internalServerError(res);
                 }               

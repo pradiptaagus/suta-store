@@ -46,6 +46,7 @@
                     <tr>
                         <th class="border-top-0 border-left-0" style="width: 150px;">Kode</th>
                         <th class="border-top-0">Nama produk</th>
+                        <th class="border-top-0">Stok</th>
                         <th class="border-top-0" style="width: 120px;">Satuan</th>
                         <th class="border-top-0" style="width: 200px;">Harga satuan</th>
                         <th class="border-top-0" style="width: 100px">Jumlah</th>
@@ -167,6 +168,7 @@
                 code: null,
                 name: null,
                 qty: 1,
+                stockStype: "store",
                 discount: 0,
                 givenPrice: 0,
                 subTotal: 0,
@@ -227,6 +229,13 @@
                             '<select class="custom-select" name="name['+index+']" id="name['+index+']" data-key="name" data-index="'+index+'" onchange="handleChangeProductName(this)">'+
                             '</select>'+
                             '<div class="invalid-feedback" id="name-error-'+index+'"></div> '+
+                        '</td>'+
+                        '<td>'+
+                            '<select class="custom-select" id="stock-type-'+index+'" data-key="variant" data-index="'+index+'" onchange="handleChangeStockType(this)">'+
+                                '<option value="store">Toko</option>' +
+                                '<option value="warehouse">Gudang</option>' +
+                            '</select>'+
+                            '<div class="invalid-feedback" id="varian-error-'+index+'"></div> '+
                         '</td>'+
                         '<td>'+
                             '<select class="custom-select" name="variant['+index+']" id="variant['+index+']" data-key="variant" data-index="'+index+'" onchange="handleChangeProductVariant(this)">'+
@@ -333,6 +342,12 @@
                 placeholder: "Pilih",
                 theme: "bootstrap"
             });
+        }
+
+        function handleChangeStockType(e) {
+            const el = $(e);
+            const index = el.data("index");
+            transactionDetails[index].stockStype = el.val();
         }
 
         function handleChangeProductName(e) {
@@ -694,7 +709,8 @@
                             return {
                                 productVariantId: transactionDetail.productVariant.id,
                                 qty: transactionDetail.qty,
-                                discount: transactionDetail.discount
+                                discount: transactionDetail.discount,
+                                stockType: transactionDetail.stockStype
                             }
                         })
                     },

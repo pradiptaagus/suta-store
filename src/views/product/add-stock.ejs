@@ -10,7 +10,7 @@
 <body>
     <%- include("../partials/navbar.ejs") -%>
     <div class="container my-5">
-        <h1 class="mb-3">Tambah Stok</h1>
+        <h1 class="mb-3" id="title">Tambah Stok</h1>
         <form method="put">
             <div class="row mb-3">
                 <div class="col-12 col-md-3">Kode produk</div>
@@ -29,15 +29,18 @@
             <div class="row mb-3">
                 <div class="col-12 col-md-3">Lokasi penyimpanan</div>
                 <div class="col-9">
-                    <span class="d-none d-md-inline-block">:</span>
-                    <span id="storage-type"></span>
+                    <select class="custom-select input-select" name="storageType" id="storageType">
+                        <option value="store">Toko</option>
+                        <option value="warehouse">Gudang</option>
+                    </select>
+                    <div class="invalid-feedback" id="storageTypeError"></div>
                 </div>
             </div>
             <div class="form-group row">
-                <label for="addition-stock" class="col-12 col-md-3 col-form-label">Stok yang ditambahkan</label>
+                <label for="addition-stock" id="stock-operation" class="col-12 col-md-3 col-form-label">Stok yang ditambahkan</label>
                 <div class="col-9">
                     <input class="form-control input-stock" type="text" name="addition-stock" id="addition-stock" placeholder="Contoh: 100" data-numberonly="true" onkeyup="handleAdditionQtyChange(this)">
-                    <small>Jumlah stok yang ditambahkan mengikuti satuan terbesar</small>
+                    <small id="stock-operation-message">Jumlah stok yang ditambahkan mengikuti satuan terbesar</small>
                     <div class="invalid-feedback" id="addition-stock-error"></div>
                 </div>
             </div>
@@ -45,7 +48,7 @@
                 <div class="col-12 col-md-3 mb-3 mb-md-0">Varian</div>
                 <div class="col-12 col-md-9" id="variant"></div>
             </div>            
-            <a href="/product" class="btn btn-secondary">Kembali</a>
+            <a href="/product/stock-management" class="btn btn-secondary">Kembali</a>
             <button class="btn btn-success ml-2">Simpan perubahan</button>
         </form>
     </div>
@@ -57,11 +60,22 @@
     <script>
         let data = {};
         let additionQty = 0;
+        
+
+        const params = new URLSearchParams(window.location.search);
+        const operation = params.get("operation") == 'delete' ? 'delete' : 'add'
 
         $("document").ready(function() {
             fetchData("<%=id%>");
             initSave();
             initAllowNumberOnly();
+            $("#title").text(operation == "delete" ? "Hapus Stok" : "Tambah")
+            $("#stock-operation").text(operation == "delete" ? "Jumlah Stok yang dikurangi" : "Jumlah Stok yang ditambahkan")
+            $("#stock-operation-message").text(operation == "delete" ? "Jumlah stok yang dikurangi mengikuti satuan terbesar" : "Jumlah stok yang ditambahkan mengikuti satuan terbesar")
+            $("#storageType").change(function(e) {
+                renderProductVariant(data);
+                calculateOldStock();
+            })
         });
 
         function fetchData(id) {
@@ -73,9 +87,10 @@
                     data = result.data;
                     $("#code").text(data.code);
                     $("#name").text(data.name);
-                    $("#storage-type").text(data.storageType);
+                    // $("#storage-type").text(data.storageType);
 
-                    renderProductVariant(data)
+                    renderProductVariant(data);
+                    calculateOldStock();
 
                 }, error: function(error) {
                     console.log(error);
@@ -93,7 +108,7 @@
                             '<div class="mb-3 font-weight-bold">Variant ke-'+(index + 1)+'</div>' +
                             '<div class="row mb-3">' +
                                 '<div class="col-md-5">Satuan</div>' +
-                                '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> ' + productVariant.unit + '</div>' +
+                                '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> ' + capitalize(productVariant.unit) + '</div>' +
                             '</div>' +
                             '<div class="row mb-3">' +
                                 '<div class="col-md-5">Harga</div>' +
@@ -101,16 +116,22 @@
                             '</div>' +
                             '<div class="row">' +
                                 '<div class="col-md-5">Stok lama</div>' +
-                                '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> ' + (productVariant.child ? Math.floor(data.qty / productVariant.qtyPerUnit) : data.qty) + ' ' + productVariant.unit + '</div>' +
+                                '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> <span id="old-stock-'+index+'"></span></div>' +
                             '</div>' +
                             '<div class="row mt-3 text-success">' +
                                 '<div class="col-md-5">Stok baru</div>' +
-                                '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> <span id="new-stock-'+index+'">' + (productVariant.child ? Math.floor(data.qty / productVariant.qtyPerUnit) : data.qty) + ' ' + productVariant.unit + '</span></div>' +
+                                '<div class="col-md-7"><span class="d-none d-md-inline-block">:</span> <span id="new-stock-'+index+'"></span></div>' +
                             '</div>' +
                         '</div>'
                     );
                 }
             });
+        }
+
+        function capitalize(str) {
+            let res = str.toLowerCase()
+            res = str[0].toUpperCase() + res.substring(1);
+            return res;
         }
 
         function handleAdditionQtyChange(e) {
@@ -124,12 +145,14 @@
         // Else, newQty = oldQty + Math.floor(additionQty / qtyPerUnit)
         function calculateNewStock(qty) {
             let qtyPerUnits = data.productVariant.map((item) => item.qtyPerUnit);
+            const isStore = $("#storageType").val() == "store";
+
             qtyPerUnits.forEach((item) => {
                 qty = qty * item
             });
 
-            const oldQty = data.qty;
-            const currentQuantity = oldQty + qty;
+            const oldQty = (isStore) ? data.qtyStore : data.qtyWarehouse;
+            const currentQuantity = oldQty + (operation == "add") ? qty : -qty;
             additionQty = qty;
 
             let realQuantityPerUnits = [];
@@ -146,7 +169,31 @@
 
             for (let i = 0; i < data.productVariant.length; i++) {
                 const newQty = Math.floor(currentQuantity / realQuantityPerUnits[i]);
-                $("#new-stock-"+i).text(newQty + " " + data.productVariant[i].unit);
+                $("#new-stock-"+i).text(newQty + " (" + capitalize(data.productVariant[i].unit) + ")");
+            }
+        }
+
+        function calculateOldStock() {
+            let qtyPerUnits = data.productVariant.map((item) => item.qtyPerUnit);
+            const isStore = $("#storageType").val() == "store";
+
+            const currentQuantity = (isStore) ? data.qtyStore : data.qtyWarehouse;
+
+            let realQuantityPerUnits = [];
+
+            for (let i = 0; i < qtyPerUnits.length; i++) {
+                let temp = qtyPerUnits[i];
+
+                for (let j = i + 1; j < qtyPerUnits.length; j++) {
+                    temp = temp * qtyPerUnits[j];
+                }
+
+                realQuantityPerUnits.push(temp);
+            }
+
+            for (let i = 0; i < data.productVariant.length; i++) {
+                const newQty = Math.floor(currentQuantity / realQuantityPerUnits[i]);
+                $("#old-stock-"+i).text(newQty + " (" + capitalize(data.productVariant[i].unit) + ")");
             }
         }
 
@@ -157,10 +204,12 @@
                     url: "/api/product/update-stock/<%=id%>",
                     method: "put",
                     data: {
-                        additionQty: additionQty
+                        additionQty: additionQty,
+                        qtyType: $("#storageType").val()
                     },
                     success: function(result) {
                         alert("Stock berhasil ditambahkan.");
+                        window.location.reload(false); 
                     },
                     error: function(error) {
                         console.log(error);

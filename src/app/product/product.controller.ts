@@ -224,9 +224,7 @@ export class ProductController {
             // Store product variant body
             const productVariantBody: StoreProductDetailDTO = {
                 productId: product.id,
-                qtyPerUnit: productVariants[i].childIndex ? 
-                    productVariants[i].qtyPerUnit * productVariants[productVariants[i].childIndex].qtyPerUnit : 
-                    productVariants[i].qtyPerUnit,
+                qtyPerUnit: productVariants[i].qtyPerUnit,
                 price: productVariants[i].price,
                 unit: productVariants[i].unit,
                 isParent: productVariants[i].isParent
@@ -442,7 +440,8 @@ export class ProductController {
     async addStock(req: Request, res: Response, next: NextFunction) {
         const id = req.params.id;
         const body: {
-            additionQty: number // smallest quantity unit
+            additionQty: number // smallest quantity unit,
+            qtyType: string
         } = req.body;
         
         // Check if product already exist
@@ -468,8 +467,8 @@ export class ProductController {
         // End validate request
 
         // Update product stock
-        const newQty = +body.additionQty + selectedProduct.qty;
-        const addStockResult = await new ProductService().updateStock(newQty, id);
+        const newQty = +body.additionQty + ((body.qtyType == "store") ? selectedProduct.qtyStore : selectedProduct.qtyWarehouse);
+        const addStockResult = await new ProductService().updateStock(newQty, id, body.qtyType);
         if (!addStockResult) {
             return new ResponseBuilder().internalServerError(res);
         }

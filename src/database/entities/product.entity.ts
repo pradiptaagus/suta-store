@@ -20,8 +20,14 @@ export class Product {
     @Column({type: "enum", enum: storageType, default: storageType.STORE, nullable: true})
     storageType!: string;
 
-    @Column({type: "int", nullable: true})
+    @Column({type: "int", nullable: true, default: 0}) // TODO: remove this. unused
     qty!: number;
+
+    @Column({type: "int", nullable: false, default: 0})
+    qtyStore!: number;
+
+    @Column({type: "int", nullable: false, default: 0})
+    qtyWarehouse!: number;
 
     @CreateDateColumn()
     createdAt!: string;

@@ -130,10 +130,14 @@ export class ProductService {
         }
     }
 
-    async updateStock(additionQty: number, id: string): Promise<Product | undefined> {
+    async updateStock(additionQty: number, id: string, qtyType: string): Promise<Product | undefined> {
         const product = await this.productRepository.findOne(id);
         if (product) {
-            product.qty = additionQty
+            if(qtyType == "store") {
+                product.qtyStore = additionQty;
+            } else {
+                product.qtyWarehouse = additionQty;
+            }
             const result = await this.productRepository.save(product);
             return result;
         }
